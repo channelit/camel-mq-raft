@@ -1,0 +1,23 @@
+spring:
+  rsocket:
+    server:
+      address: localhost
+      transport: tcp
+      mapping-path: /reactive
+
+camel:
+  springboot:
+    name: "reactive"
+
+management:
+  server:
+    port: 8081
+  endpoints:
+    web:
+      base-path: management
+  endpoint:
+    health:
+      enabled: true
+    metrics:
+      enabled: true
+

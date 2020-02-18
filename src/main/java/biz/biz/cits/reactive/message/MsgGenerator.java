@@ -1,4 +1,4 @@
-package biz.cits.message;
+package biz.biz.cits.reactive.message;
 
 import java.util.*;
 import java.util.stream.IntStream;
