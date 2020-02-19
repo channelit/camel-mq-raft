@@ -35,20 +35,4 @@ public class ReactiveConsumer {
 
     }
 
-//
-//    @Component
-//    public static class BasicCamelToReactorExampleRoutes extends RouteBuilder {
-//
-//        @Override
-//        public void configure() throws Exception {
-//
-//            from("direct:reactive-out")
-//                    .setBody().header(Exchange.TIMER_COUNTER)
-//                    .to("reactive-streams:messages");
-//
-//
-//        }
-//
-//    }
-
 }
