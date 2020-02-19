@@ -1,5 +1,6 @@
 package biz.biz.cits.reactive.camel;
 
+import biz.biz.cits.reactive.db.DbInjester;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
@@ -19,7 +20,9 @@ public class AmqRoute extends RouteBuilder {
                     String convertedMessage = exchange.getMessage().getBody() + " new";
                     exchange.getMessage().setBody(convertedMessage);
                 })
-                .to("jms:out-queue");
+                .to("jms:out-queue")
+                .process(new DbInjester())
+                .to("jdbc:datasource");
 
     }
 }

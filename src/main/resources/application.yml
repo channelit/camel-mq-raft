@@ -5,7 +5,12 @@ app:
   in-queue: jms:inqueue
   out-queue: jms:outqueue
 
-
+postgres:
+  server: localhost
+  port: 5432
+  user: postgres
+  pswd: camel
+  db: postgres
 
 spring:
   activemq:
