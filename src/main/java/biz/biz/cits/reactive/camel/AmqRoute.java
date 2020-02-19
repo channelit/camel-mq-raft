@@ -15,6 +15,7 @@ public class AmqRoute extends RouteBuilder {
     @Override
     public void configure() throws Exception {
         from("jms:in-queue")
+                .to("reactive-streams:messages")
                 .log(LoggingLevel.DEBUG, log, "in message")
                 .process(exchange -> {
                     String convertedMessage = exchange.getMessage().getBody() + " new";
