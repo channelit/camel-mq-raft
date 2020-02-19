@@ -24,6 +24,5 @@ public class AmqRoute extends RouteBuilder {
                 .to("jms:out-queue")
                 .process(new DbInjester())
                 .to("jdbc:datasource");
-
     }
 }
