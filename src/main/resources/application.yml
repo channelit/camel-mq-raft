@@ -1,4 +1,19 @@
+server:
+  port: 8421
+
+app:
+  in-queue: jms:inqueue
+  out-queue: jms:outqueue
+
+
+
 spring:
+  activemq:
+    broker-url: tcp://localhost:61616
+
+    pool:
+      enabled: false
+      max-connections: 100
   rsocket:
     server:
       address: localhost
@@ -11,10 +26,10 @@ camel:
 
 management:
   server:
-    port: 8081
+    port: 8484
   endpoints:
     web:
-      base-path: management
+      base-path: /management
   endpoint:
     health:
       enabled: true
