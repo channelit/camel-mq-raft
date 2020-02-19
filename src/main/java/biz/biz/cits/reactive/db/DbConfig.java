@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 @Configuration
 public class DbConfig {
@@ -34,6 +36,13 @@ public class DbConfig {
         dataSource.setUser(pgUser);
         dataSource.setPassword(pgPswd);
         dataSource.setDatabaseName(pgDb);
+        try {
+            Statement stmt = dataSource.getConnection().createStatement();
+            stmt.execute("CREATE TABLE messages (ID INT, MESSAGES VARCHAR(500))");
+            stmt.closeOnCompletion();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return dataSource;
     }
 }
