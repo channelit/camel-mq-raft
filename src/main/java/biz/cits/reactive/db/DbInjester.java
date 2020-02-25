@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.db;
+package biz.cits.reactive.db;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;

@@ -1,9 +1,6 @@
 server:
   port: 8421
-local:
-  rsocket:
-    server:
-      port: 8422
+
 app:
   in-queue: jms:inqueue
   out-queue: jms:outqueue
@@ -24,10 +21,9 @@ spring:
       max-connections: 100
   rsocket:
     server:
-      port: 7000
+      port: 7001
       address: localhost
       transport: tcp
-      mapping-path: /reactive
 
 camel:
   springboot:

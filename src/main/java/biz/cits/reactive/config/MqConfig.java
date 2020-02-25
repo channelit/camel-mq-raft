@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.config;
+package biz.cits.reactive.config;
 
 import org.apache.camel.component.jms.JmsComponent;
 import org.springframework.context.annotation.Bean;

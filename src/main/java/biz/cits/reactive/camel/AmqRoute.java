@@ -1,6 +1,6 @@
-package biz.biz.cits.reactive.camel;
+package biz.cits.reactive.camel;
 
-import biz.biz.cits.reactive.db.DbInjester;
+import biz.cits.reactive.db.DbInjester;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;

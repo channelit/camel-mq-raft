@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.db;
+package biz.cits.reactive.db;
 
 import org.postgresql.ds.PGSimpleDataSource;
 import org.springframework.beans.factory.annotation.Value;

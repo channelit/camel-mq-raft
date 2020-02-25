@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.message;
+package biz.cits.reactive.message;
 
 import org.springframework.stereotype.Component;
 

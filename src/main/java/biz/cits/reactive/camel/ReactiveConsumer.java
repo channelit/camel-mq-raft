@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.camel;
+package biz.cits.reactive.camel;
 
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;

@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.model;
+package biz.cits.reactive.model;
 
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;

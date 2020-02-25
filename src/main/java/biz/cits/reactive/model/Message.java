@@ -1,4 +1,4 @@
-package biz.biz.cits.reactive.model;
+package biz.cits.reactive.model;
 
 public class Message {
 
