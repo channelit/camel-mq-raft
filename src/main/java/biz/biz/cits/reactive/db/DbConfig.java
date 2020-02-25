@@ -38,7 +38,7 @@ public class DbConfig {
         dataSource.setDatabaseName(pgDb);
         try {
             Statement stmt = dataSource.getConnection().createStatement();
-            stmt.execute("CREATE TABLE messages (ID INT, MESSAGES VARCHAR(500))");
+            stmt.execute("CREATE TABLE messages (ID INT, MESSAGE VARCHAR(500))");
             stmt.closeOnCompletion();
         } catch (SQLException e) {
             e.printStackTrace();
