@@ -11,7 +11,12 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.codec.CharSequenceEncoder;
+import org.springframework.core.codec.StringDecoder;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.messaging.rsocket.MetadataExtractor;
+import org.springframework.messaging.rsocket.RSocketRequester;
+import org.springframework.messaging.rsocket.RSocketStrategies;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -31,13 +36,28 @@ public class RSocketTest {
 //        }
 
         @Bean
-        RSocket rsocket() {
-            return RSocketFactory.connect()
-                    .mimeType("/messages", MimeTypeUtils.APPLICATION_JSON_VALUE)
+        RSocket rSocket() {
+            return RSocketFactory
+                    .connect()
+                    .mimeType(MimeTypeUtils.APPLICATION_JSON_VALUE, MimeTypeUtils.APPLICATION_JSON_VALUE)
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .transport(TcpClientTransport.create(new InetSocketAddress("localhost", 7001)))
+                    .transport(TcpClientTransport.create("localhost",7000))
                     .start()
                     .block();
+        }
+
+        @Bean
+        RSocketStrategies rsocketStrategies() {
+            return RSocketStrategies.builder()
+                    .decoder(StringDecoder.allMimeTypes())
+                    .encoder(CharSequenceEncoder.allMimeTypes())
+                    .dataBufferFactory(new DefaultDataBufferFactory(true))
+                    .build();
+        }
+
+        @Bean
+        RSocketRequester rSocketRequester(RSocketStrategies rSocketStrategies) {
+            return RSocketRequester.wrap(rSocket(), MimeTypeUtils.ALL, MimeTypeUtils.ALL, rSocketStrategies);
         }
 
 

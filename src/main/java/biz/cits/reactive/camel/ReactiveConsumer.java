@@ -20,18 +20,18 @@ public class ReactiveConsumer {
 
         @Autowired
         private CamelReactiveStreamsService camel;
-
-
-        @PostConstruct
-        public void setupStreams() {
-
-            Publisher<String> messages = camel.fromStream("messages", String.class);
-
-            Flux.from(messages)
-                    .map(tuple -> "BasicCamelToReactor - " + tuple.toString())
-                    .doOnNext(LOG::info)
-                    .subscribe();
-        }
+//
+//
+//        @PostConstruct
+//        public void setupStreams() {
+//
+//            Publisher<String> messages = camel.fromStream("messages", String.class);
+//
+//            Flux.from(messages)
+//                    .map(tuple -> "BasicCamelToReactor - " + tuple.toString())
+//                    .doOnNext(LOG::info)
+//                    .subscribe();
+//        }
 
     }
 

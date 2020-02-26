@@ -5,7 +5,6 @@ import biz.cits.reactive.model.MessageRepo;
 import org.reactivestreams.Publisher;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
 
 @Controller
 public class RSocketController {
@@ -17,9 +16,9 @@ public class RSocketController {
         this.messageRepo = messageRepo;
     }
 
-    @MessageMapping({"messages/{filter}"})
-    public Publisher<Message> feedMarketData(@PathVariable String filter) {
-        return messageRepo.getMessages(filter);
+    @MessageMapping("messages")
+    public Publisher<Message> feedMarketData() {
+        return messageRepo.getMessages("world");
     }
 
 }

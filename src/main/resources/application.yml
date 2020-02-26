@@ -21,9 +21,9 @@ spring:
       max-connections: 100
   rsocket:
     server:
-      port: 7001
-      address: localhost
+      port: 7000
       transport: tcp
+      address: localhost
 
 camel:
   springboot:
