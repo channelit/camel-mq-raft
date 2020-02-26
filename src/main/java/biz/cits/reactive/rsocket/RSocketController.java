@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.stereotype.Controller;
+import reactor.core.publisher.Flux;
 
 @Controller
 public class RSocketController {
@@ -32,7 +33,9 @@ public class RSocketController {
 
     @MessageMapping("camel/{filter}")
     public Publisher<Message> getCamel(@DestinationVariable String filter) {
-        return camel.fromStream("messages", Message.class);
+        return Flux.from(camel.fromStream("messages", Message.class)).filter(message -> {
+            return message.getMessage().startsWith(filter);
+        });
     }
 
 }
