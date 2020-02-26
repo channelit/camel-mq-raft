@@ -17,8 +17,11 @@ import java.util.Map;
 @RequestMapping("mq")
 public class MsgController {
 
-    @Autowired
-    private JmsTemplate jmsTemplate;
+    private final JmsTemplate jmsTemplate;
+
+    public MsgController(JmsTemplate jmsTemplate) {
+        this.jmsTemplate = jmsTemplate;
+    }
 
 
     @GetMapping(path = "send", produces = "application/json")

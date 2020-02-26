@@ -4,7 +4,6 @@ server:
 app:
   in-queue: jms:inqueue
   out-queue: jms:outqueue
-
 postgres:
   server: localhost
   port: 5432
@@ -41,3 +40,8 @@ management:
     metrics:
       enabled: true
 
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+  level:
+    biz.cit.reactive: debug

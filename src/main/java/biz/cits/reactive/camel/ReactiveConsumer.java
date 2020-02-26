@@ -18,20 +18,22 @@ public class ReactiveConsumer {
     public static class CamelToReactive {
         private static final Logger LOG = LoggerFactory.getLogger(CamelToReactive.class);
 
-        @Autowired
-        private CamelReactiveStreamsService camel;
-//
-//
-//        @PostConstruct
-//        public void setupStreams() {
-//
-//            Publisher<String> messages = camel.fromStream("messages", String.class);
-//
-//            Flux.from(messages)
-//                    .map(tuple -> "BasicCamelToReactor - " + tuple.toString())
-//                    .doOnNext(LOG::info)
-//                    .subscribe();
-//        }
+        private final CamelReactiveStreamsService camel;
+
+        public CamelToReactive(CamelReactiveStreamsService camel) {
+            this.camel = camel;
+        }
+
+
+        @PostConstruct
+        public void setupStreams() {
+
+            Publisher<String> messages = camel.fromStream("messages", String.class);
+            Flux.from(messages)
+                    .map(tuple -> "BasicCamelToReactor - " + tuple.toString())
+                    .doOnNext(LOG::info)
+                    .subscribe();
+        }
 
     }
 
