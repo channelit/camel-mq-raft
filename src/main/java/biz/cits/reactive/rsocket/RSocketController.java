@@ -45,22 +45,24 @@ public class RSocketController {
         return Flux.from(camel.fromStream("messages", Message.class)).filter(message -> message.getMessage().startsWith(filter));
     }
 
-    @MessageMapping("post")
-    public String postMessage(@Payload Message message) {
+    @MessageMapping("post/{client}")
+    public String postMessage(@Payload Message message, @DestinationVariable String client) {
         System.out.println(message);
         jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
             TextMessage textMessage = messageCreator.createTextMessage(message.getMessage());
+            textMessage.setStringProperty("client", client);
             textMessage.setJMSCorrelationID(message.getMessage());
             return textMessage;
         });
         return "ok";
     }
 
-    @MessageMapping("posts")
-    public Publisher<Message> postMessage(@Payload Flux<Message> messages) {
+    @MessageMapping("posts/{client}")
+    public Publisher<Message> postMessage(@Payload Flux<Message> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
             jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
                 TextMessage textMessage = messageCreator.createTextMessage(message.getMessage());
+                textMessage.setStringProperty("client", client);
                 textMessage.setJMSCorrelationID(message.getMessage());
                 return textMessage;
             });
