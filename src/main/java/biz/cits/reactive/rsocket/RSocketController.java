@@ -2,7 +2,6 @@ package biz.cits.reactive.rsocket;
 
 import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.MessageRepo;
-import io.rsocket.util.DefaultPayload;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
@@ -13,11 +12,10 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import javax.jms.TextMessage;
+import java.time.Duration;
 
 @Controller
 public class RSocketController {
@@ -56,6 +54,19 @@ public class RSocketController {
             return textMessage;
         });
         return "ok";
+    }
+
+    @MessageMapping("posts")
+    public Publisher<Message> postMessage(@Payload Flux<Message> messages) {
+        return messages.delayElements(Duration.ofMillis(100)).map(message -> {
+            jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
+                TextMessage textMessage = messageCreator.createTextMessage(message.getMessage());
+                textMessage.setJMSCorrelationID(message.getMessage());
+                return textMessage;
+            });
+            return message;
+        });
+
     }
 
 }
