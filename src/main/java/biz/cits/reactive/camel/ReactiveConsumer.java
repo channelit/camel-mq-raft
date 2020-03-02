@@ -4,7 +4,6 @@ import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsServi
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -23,7 +22,6 @@ public class ReactiveConsumer {
         public CamelToReactive(CamelReactiveStreamsService camel) {
             this.camel = camel;
         }
-
 
         @PostConstruct
         public void setupStreams() {

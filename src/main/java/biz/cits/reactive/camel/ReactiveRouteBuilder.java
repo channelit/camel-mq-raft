@@ -9,7 +9,5 @@ public class ReactiveRouteBuilder extends RouteBuilder {
     public void configure() throws Exception {
         CamelContext context = new DefaultCamelContext();
 
-
-
     }
 }
