@@ -1,8 +1,10 @@
 package biz.cits.reactive.rsocket;
 
+import biz.cits.reactive.camel.DbRouteBuilder;
 import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.MessageRepo;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -28,10 +30,13 @@ public class RSocketController {
 
     private final CamelReactiveStreamsService camel;
 
-    public RSocketController(JmsTemplate jmsTemplate, MessageRepo messageRepo, CamelReactiveStreamsService camel) {
+    private final CamelContext camelContext;
+
+    public RSocketController(JmsTemplate jmsTemplate, MessageRepo messageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
         this.jmsTemplate = jmsTemplate;
         this.messageRepo = messageRepo;
         this.camel = camel;
+        this.camelContext = camelContext;
     }
 
     @MessageMapping("messages/{filter}")
@@ -43,6 +48,12 @@ public class RSocketController {
     @MessageMapping("camel/{filter}")
     public Publisher<Message> getCamel(@DestinationVariable String filter) {
         return Flux.from(camel.fromStream("messages", Message.class)).filter(message -> message.getMessage().startsWith(filter));
+    }
+
+    @MessageMapping("replay/{client}")
+    public Publisher<Message> replay(@DestinationVariable String client) throws Exception {
+        camelContext.addRoutes(new DbRouteBuilder(camelContext, "jdbc:dataSource:select * from messages?dataSource=messages&outputClass=biz.cits.reactive.model.Message", "reactive-streams:replay-messages"));
+        return Flux.from(camel.fromStream("replay-messages", Message.class));
     }
 
     @MessageMapping("post/{client}")
@@ -68,7 +79,6 @@ public class RSocketController {
             });
             return message;
         });
-
     }
 
 }
