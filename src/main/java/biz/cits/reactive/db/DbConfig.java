@@ -38,10 +38,10 @@ public class DbConfig {
         dataSource.setDatabaseName(pgDb);
         try {
             Statement stmt = dataSource.getConnection().createStatement();
-            stmt.execute("CREATE TABLE messages (ID INT, MESSAGE VARCHAR(500))");
+            stmt.execute("CREATE TABLE messages (ID UUID PRIMARY KEY, MESSAGE JSONB NOT NULL)");
             stmt.closeOnCompletion();
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         return dataSource;
     }
