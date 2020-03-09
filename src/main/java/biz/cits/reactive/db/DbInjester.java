@@ -8,7 +8,7 @@ public class DbInjester implements Processor {
     public void process(Exchange exchange) throws Exception {
         String input = (String) exchange.getIn().getBody();
         System.out.println("Input to be persisted : " + input);
-        String insertQuery = "INSERT INTO messages values ( '1','" + input+"')";
+        String insertQuery = "INSERT INTO messages values ( '" + exchange.getMessage().getMessageId() + "','" + input + "')";
         System.out.println("Insert Query is : " + insertQuery);
         exchange.getIn().setBody(insertQuery);
     }

@@ -23,7 +23,9 @@ public class AmqRoute extends RouteBuilder {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());
                     String jsonString = exchange.getMessage().getBody().toString();
-                    exchange.getMessage().setBody(mapper.readValue(jsonString, ClientMessage.class));
+                    ClientMessage clientMessage = mapper.readValue(jsonString, ClientMessage.class);
+                    exchange.getMessage().setMessageId(clientMessage.getId().toString());
+                    exchange.getMessage().setBody(clientMessage);
                 })
                 .to("reactive-streams:messages")
                 .process(exchange -> {
