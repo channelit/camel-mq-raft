@@ -5,6 +5,7 @@ import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
@@ -61,7 +62,15 @@ public class RSocketController {
     public String postMessage(@Payload Message message, @DestinationVariable String client) {
         System.out.println(message);
         jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
-            TextMessage textMessage = messageCreator.createTextMessage(message.toString());
+            ObjectMapper mapper = new ObjectMapper();
+            JavaTimeModule module = new JavaTimeModule();
+            mapper.registerModule(module);
+            TextMessage textMessage = null;
+            try {
+                textMessage = messageCreator.createTextMessage(mapper.writeValueAsString(message));
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
             textMessage.setStringProperty("client", client);
             textMessage.setJMSCorrelationID(message.toString());
             return textMessage;
@@ -73,7 +82,7 @@ public class RSocketController {
     public Publisher<ClientMessage> postMessage(@Payload Flux<ClientMessage> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
             jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
-                ObjectMapper mapper = new ObjectMapper();
+                ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 TextMessage textMessage = null;
                 try {
                     textMessage = messageCreator.createTextMessage(mapper.writeValueAsString(message));

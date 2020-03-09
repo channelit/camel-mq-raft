@@ -1,10 +1,8 @@
 package biz.cits.reactive.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.google.auto.value.AutoValue;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +14,9 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-//@JsonSerialize(as = AutoValue.class)
-//@JsonDeserialize(builder = ClientMessage.Builder.class)
+@JsonSerialize
+@JsonDeserialize
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ClientMessage implements Message {
 
     private Object id;

@@ -1,7 +1,9 @@
 package biz.cits.reactive.camel;
 
 import biz.cits.reactive.db.DbInjester;
-import biz.cits.reactive.model.Message;
+import biz.cits.reactive.model.ClientMessage;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.slf4j.Logger;
@@ -16,12 +18,18 @@ public class AmqRoute extends RouteBuilder {
     @Override
     public void configure() {
         from("jms:in-queue")
-                .convertBodyTo(Message.class)
-                .to("reactive-streams:messages")
                 .log(LoggingLevel.DEBUG, log, "in message")
                 .process(exchange -> {
-                    String convertedMessage = exchange.getMessage().getBody() + " new";
-                    exchange.getMessage().setBody(convertedMessage);
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.registerModule(new JavaTimeModule());
+                    String jsonString = exchange.getMessage().getBody().toString();
+                    exchange.getMessage().setBody(mapper.readValue(jsonString, ClientMessage.class));
+                })
+                .to("reactive-streams:messages")
+                .process(exchange -> {
+                    ObjectMapper mapper = new ObjectMapper();
+                    mapper.registerModule(new JavaTimeModule());
+                    exchange.getMessage().setBody(mapper.writeValueAsString(exchange.getMessage().getBody()));
                 })
                 .to("jms:out-queue")
                 .process(new DbInjester())
