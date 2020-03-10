@@ -1,5 +1,6 @@
 package biz.cits.reactive.rsocket;
 
+import biz.cits.reactive.camel.ReactiveRouteBuilder;
 import biz.cits.reactive.model.ClientMessage;
 import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.ClientMessageRepo;
@@ -51,6 +52,16 @@ public class RSocketController {
     @MessageMapping("camel/{filter}")
     public Publisher<ClientMessage> getCamel(@DestinationVariable String filter) {
         return Flux.from(camel.fromStream("messages", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+    }
+
+    @MessageMapping("camel-durable/{client}/{filter}")
+    public Publisher<ClientMessage> getCamelDurable(@DestinationVariable String client, @DestinationVariable String filter) {
+        try {
+            camelContext.addRoutes(new ReactiveRouteBuilder(camelContext, client));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Flux.from(camel.fromStream(client, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
     }
 
     @MessageMapping("replay/{client}")
