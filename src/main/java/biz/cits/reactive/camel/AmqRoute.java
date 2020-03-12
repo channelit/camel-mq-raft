@@ -17,7 +17,7 @@ public class AmqRoute extends RouteBuilder {
 
     @Override
     public void configure() {
-        from("jms:in-queue")
+        from("jms:topic:message-in-topic")
                 .log(LoggingLevel.DEBUG, log, "in message")
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
@@ -27,13 +27,12 @@ public class AmqRoute extends RouteBuilder {
                     exchange.getMessage().setMessageId(clientMessage.getId().toString());
                     exchange.getMessage().setBody(clientMessage);
                 })
-                .to("reactive-streams:messages")
+                .to("reactive-streams:message-out-stream")
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());
                     exchange.getMessage().setBody(mapper.writeValueAsString(exchange.getMessage().getBody()));
                 })
-                .to("jms:out-queue")
                 .process(new DbInjester())
                 .to("jdbc:datasource");
     }

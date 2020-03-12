@@ -7,17 +7,18 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 
-public class ReactiveRouteBuilder extends RouteBuilder {
+public class VirtualTopicRouteBuilder extends RouteBuilder {
     private String client;
 
-    public ReactiveRouteBuilder(CamelContext context, String client) {
+    public VirtualTopicRouteBuilder(CamelContext context, String client) {
         super(context);
         this.client = client;
+
     }
 
     @Override
     public void configure() throws Exception {
-        from("jms:in-queue")
+        from("jms:topic:message-in-topic")
                 .to("jms:topic:VirtualTopic." + client)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
@@ -27,7 +28,7 @@ public class ReactiveRouteBuilder extends RouteBuilder {
                     exchange.getMessage().setMessageId(clientMessage.getId().toString());
                     exchange.getMessage().setBody(clientMessage);
                 })
-                .to("reactive-streams:" + client);
+                .to("reactive-streams:" + client.toLowerCase() + "-message-out-stream-virtual");
 
     }
 }

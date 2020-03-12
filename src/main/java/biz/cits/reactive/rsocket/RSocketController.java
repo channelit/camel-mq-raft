@@ -1,13 +1,14 @@
 package biz.cits.reactive.rsocket;
 
-import biz.cits.reactive.camel.ReactiveRouteBuilder;
+import biz.cits.reactive.camel.DurableSuscriberRouteBuilder;
+import biz.cits.reactive.camel.VirtualTopicRouteBuilder;
 import biz.cits.reactive.model.ClientMessage;
 import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.activemq.command.ActiveMQQueue;
+import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
@@ -28,7 +29,7 @@ public class RSocketController {
 
     Logger logger = LoggerFactory.getLogger(RSocketController.class);
 
-    private final JmsTemplate jmsTemplate;
+    private JmsTemplate jmsTemplate;
 
     private final ClientMessageRepo messageRepo;
 
@@ -38,6 +39,7 @@ public class RSocketController {
 
     public RSocketController(JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
         this.jmsTemplate = jmsTemplate;
+        jmsTemplate.setPubSubDomain(true);
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
@@ -51,17 +53,27 @@ public class RSocketController {
 
     @MessageMapping("camel/{filter}")
     public Publisher<ClientMessage> getCamel(@DestinationVariable String filter) {
-        return Flux.from(camel.fromStream("messages", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.fromStream("message-out-stream", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
     }
 
     @MessageMapping("camel-durable/{client}/{filter}")
     public Publisher<ClientMessage> getCamelDurable(@DestinationVariable String client, @DestinationVariable String filter) {
         try {
-            camelContext.addRoutes(new ReactiveRouteBuilder(camelContext, client));
+            camelContext.addRoutes(new DurableSuscriberRouteBuilder(camelContext, client));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.fromStream(client, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-durable", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+    }
+
+    @MessageMapping("camel-virtual/{client}/{filter}")
+    public Publisher<ClientMessage> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
+        try {
+            camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-virtual", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
     }
 
     @MessageMapping("replay/{client}")
@@ -72,7 +84,7 @@ public class RSocketController {
     @MessageMapping("post/{client}")
     public String postMessage(@Payload Message message, @DestinationVariable String client) {
         System.out.println(message);
-        jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
+        jmsTemplate.send(new ActiveMQTopic("message-in-topic"), messageCreator -> {
             ObjectMapper mapper = new ObjectMapper();
             JavaTimeModule module = new JavaTimeModule();
             mapper.registerModule(module);
@@ -92,7 +104,7 @@ public class RSocketController {
     @MessageMapping("posts/{client}")
     public Publisher<ClientMessage> postMessage(@Payload Flux<ClientMessage> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            jmsTemplate.send(new ActiveMQQueue("in-queue"), messageCreator -> {
+            jmsTemplate.send(new ActiveMQTopic("message-in-topic"), messageCreator -> {
                 ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 TextMessage textMessage = null;
                 try {
