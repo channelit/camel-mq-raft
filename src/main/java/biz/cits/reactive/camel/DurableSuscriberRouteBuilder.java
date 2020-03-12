@@ -6,7 +6,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
 
-//TODO: No working as expected. Use virtual route instead.
+//TODO: Work in progress. Use virtual route.
 public class DurableSuscriberRouteBuilder extends RouteBuilder {
     private String client;
 
