@@ -66,6 +66,12 @@ public class RSocketController {
         return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-durable", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
     }
 
+    //TODO: Works with only single connection. Use Virtual instead.
+    @MessageMapping("camel-durable-direct/{client}/{filter}")
+    public Publisher<ClientMessage> getCamelDurableDirect(@DestinationVariable String client, @DestinationVariable String filter) {
+        return Flux.from(camel.from("jms:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, ClientMessage.class));
+    }
+
     @MessageMapping("camel-virtual/{client}/{filter}")
     public Publisher<ClientMessage> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
         try {

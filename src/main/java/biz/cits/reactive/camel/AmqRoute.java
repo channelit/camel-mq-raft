@@ -27,6 +27,7 @@ public class AmqRoute extends RouteBuilder {
                     exchange.getMessage().setMessageId(clientMessage.getId().toString());
                     exchange.getMessage().setBody(clientMessage);
                 })
+                .to("jms:topic:message-out-topic")
                 .to("reactive-streams:message-out-stream")
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
