@@ -6,8 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.throttling.ThrottlingInflightRoutePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,9 +17,22 @@ public class AmqRoute extends RouteBuilder {
 
     static final Logger log = LoggerFactory.getLogger(AmqRoute.class);
 
+    private final String inTopic;
+
+    private final String outTopic;
+
+    public AmqRoute(@Value("${app.in-topic}") String inTopic, @Value("${app.in-topic}") String outTopic) {
+        this.inTopic = inTopic;
+        this.outTopic = outTopic;
+    }
+
     @Override
     public void configure() {
-        from("jms:topic:message-in-topic")
+        ThrottlingInflightRoutePolicy inflight = new ThrottlingInflightRoutePolicy();
+        inflight.setMaxInflightExchanges(2000);
+        inflight.setResumePercentOfMax(25);
+
+        fromF("jms:topic:%s", inTopic)
                 .log(LoggingLevel.DEBUG, log, "in message")
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
@@ -27,8 +42,8 @@ public class AmqRoute extends RouteBuilder {
                     exchange.getMessage().setMessageId(clientMessage.getId().toString());
                     exchange.getMessage().setBody(clientMessage);
                 })
-                .to("jms:topic:message-out-topic")
-                .to("reactive-streams:message-out-stream")
+                .toF("jms:topic:VirtualTopic.%s", outTopic)
+                .to("reactive-streams:message-out-stream").routePolicy(inflight)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());

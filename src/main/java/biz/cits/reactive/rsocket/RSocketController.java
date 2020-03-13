@@ -1,6 +1,7 @@
 package biz.cits.reactive.rsocket;
 
 import biz.cits.reactive.camel.DurableSuscriberRouteBuilder;
+import biz.cits.reactive.camel.VirtualDirectTopicRouteBuilder;
 import biz.cits.reactive.camel.VirtualTopicRouteBuilder;
 import biz.cits.reactive.model.ClientMessage;
 import biz.cits.reactive.model.Message;
@@ -14,6 +15,7 @@ import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsServi
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -29,6 +31,10 @@ public class RSocketController {
 
     Logger logger = LoggerFactory.getLogger(RSocketController.class);
 
+    private final String inTopic;
+
+    private final String outTopic;
+
     private JmsTemplate jmsTemplate;
 
     private final ClientMessageRepo messageRepo;
@@ -37,7 +43,9 @@ public class RSocketController {
 
     private final CamelContext camelContext;
 
-    public RSocketController(JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
+    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
+        this.inTopic = inTopic;
+        this.outTopic = outTopic;
         this.jmsTemplate = jmsTemplate;
         jmsTemplate.setPubSubDomain(true);
         this.messageRepo = clientMessageRepo;
@@ -72,14 +80,24 @@ public class RSocketController {
         return Flux.from(camel.from("jms:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, ClientMessage.class));
     }
 
-    @MessageMapping("camel-virtual/{client}/{filter}")
-    public Publisher<ClientMessage> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
+    @MessageMapping("camel-virtual-direct/{client}/{filter}")
+    public Publisher<ClientMessage> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
         try {
-            camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client));
+            camelContext.addRoutes(new VirtualDirectTopicRouteBuilder(camelContext, client, outTopic));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-virtual", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.from("jms:topic:Consumer." + client + ".VirtualTopic." + outTopic, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+    }
+
+    @MessageMapping("camel-virtual/{client}/{filter}")
+    public Publisher<ClientMessage> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
+        try {
+            camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return Flux.from(camel.fromStream("message-out-stream-" + client, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
     }
 
     @MessageMapping("replay/{client}")
@@ -90,7 +108,7 @@ public class RSocketController {
     @MessageMapping("post/{client}")
     public String postMessage(@Payload Message message, @DestinationVariable String client) {
         System.out.println(message);
-        jmsTemplate.send(new ActiveMQTopic("message-in-topic"), messageCreator -> {
+        jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
             ObjectMapper mapper = new ObjectMapper();
             JavaTimeModule module = new JavaTimeModule();
             mapper.registerModule(module);
@@ -110,7 +128,7 @@ public class RSocketController {
     @MessageMapping("posts/{client}")
     public Publisher<ClientMessage> postMessage(@Payload Flux<ClientMessage> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            jmsTemplate.send(new ActiveMQTopic("message-in-topic"), messageCreator -> {
+            jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
                 ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 TextMessage textMessage = null;
                 try {

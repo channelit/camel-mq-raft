@@ -2,8 +2,8 @@ server:
   port: 8421
 
 app:
-  in-queue: jms:inqueue
-  out-queue: jms:outqueue
+  in-topic: in-topic
+  out-topic: out-topic
 postgres:
   server: localhost
   port: 5432
