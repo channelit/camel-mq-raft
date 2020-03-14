@@ -1,6 +1,7 @@
 package biz.cits.reactive.camel;
 
-import biz.cits.reactive.model.ClientMessage;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.CamelContext;
@@ -21,12 +22,16 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
         fromF("jms:topic:VirtualTopic.%s", outTopic)
                 .toF("jms:topic:Consumer.%s.VirtualTopic.%s", client, outTopic)
                 .process(exchange -> {
-                    ObjectMapper mapper = new ObjectMapper();
-                    mapper.registerModule(new JavaTimeModule());
-                    String jsonString = exchange.getMessage().getBody().toString();
-                    ClientMessage clientMessage = mapper.readValue(jsonString, ClientMessage.class);
-                    exchange.getMessage().setMessageId(clientMessage.getId().toString());
-                    exchange.getMessage().setBody(clientMessage);
+                    ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+                    String jsonString = exchange.getIn().getBody().toString();
+                    JsonNode jsonNode = null;
+                    try {
+                        jsonNode = mapper.readTree(jsonString);
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
+                    exchange.getMessage().setMessageId(jsonNode.get("id").asText());
+                    exchange.getMessage().setBody(jsonString);
                 })
                 .toF("reactive-streams:message-out-stream-%s", client);
 
