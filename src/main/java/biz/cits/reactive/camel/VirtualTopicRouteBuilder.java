@@ -20,7 +20,6 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
         fromF("jms:topic:VirtualTopic.%s", outTopic)
-                .toF("jms:topic:Consumer.%s.VirtualTopic.%s", client, outTopic)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                     String jsonString = exchange.getIn().getBody().toString();
@@ -33,7 +32,6 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                     exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                     exchange.getMessage().setBody(jsonString);
                 })
-                .toF("reactive-streams:message-out-stream-%s", client);
-
+                .toF("reactive-streams:%s_%s", client, outTopic);
     }
 }

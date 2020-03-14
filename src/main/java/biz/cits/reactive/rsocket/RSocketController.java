@@ -1,10 +1,7 @@
 package biz.cits.reactive.rsocket;
 
 import biz.cits.reactive.camel.DurableSuscriberRouteBuilder;
-import biz.cits.reactive.camel.VirtualDirectTopicRouteBuilder;
 import biz.cits.reactive.camel.VirtualTopicRouteBuilder;
-import biz.cits.reactive.model.ClientMessage;
-import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -84,12 +81,7 @@ public class RSocketController {
 
     @MessageMapping("camel-virtual-direct/{client}/{filter}")
     public Publisher<String> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        try {
-            camelContext.addRoutes(new VirtualDirectTopicRouteBuilder(camelContext, client, outTopic));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter));
+        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic, String.class)).filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("camel-virtual/{client}/{filter}")
@@ -99,7 +91,7 @@ public class RSocketController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.fromStream("message_out_stream-" + client, String.class)).filter(message -> applyFilter(message, filter));
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("replay/{client}")
