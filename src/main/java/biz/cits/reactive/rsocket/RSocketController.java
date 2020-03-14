@@ -108,38 +108,38 @@ public class RSocketController {
     }
 
     @MessageMapping("post/{client}")
-    public String postMessage(@Payload Message message, @DestinationVariable String client) {
+    public String postMessage(@Payload String message, @DestinationVariable String client) {
         System.out.println(message);
         jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            mapper.registerModule(module);
-            TextMessage textMessage = null;
+            ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+            TextMessage textMessage = messageCreator.createTextMessage(message);
+            JsonNode jsonNode = null;
             try {
-                textMessage = messageCreator.createTextMessage(mapper.writeValueAsString(message));
+                jsonNode = mapper.readTree(message);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
             textMessage.setStringProperty("client", client);
-            textMessage.setJMSCorrelationID(message.toString());
+            textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
             return textMessage;
         });
         return "ok";
     }
 
     @MessageMapping("posts/{client}")
-    public Publisher<ClientMessage> postMessage(@Payload Flux<ClientMessage> messages, @DestinationVariable String client) {
+    public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
             jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
+                TextMessage textMessage = messageCreator.createTextMessage(message);
                 ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                TextMessage textMessage = null;
+                JsonNode jsonNode = null;
                 try {
-                    textMessage = messageCreator.createTextMessage(mapper.writeValueAsString(message));
+                    jsonNode = mapper.readTree(message);
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
                 textMessage.setStringProperty("client", client);
-                textMessage.setJMSCorrelationID(message.getId().toString());
+                textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
                 return textMessage;
             });
             return message;
