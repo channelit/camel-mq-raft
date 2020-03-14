@@ -21,6 +21,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
@@ -81,7 +82,7 @@ public class RSocketController {
 
     @MessageMapping("camel-virtual-direct/{client}/{filter}")
     public Publisher<String> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic, String.class)).filter(message -> applyFilter(message, filter));
+        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic, String.class)).filter(message -> applyFilter(message, filter)).delayElements(Duration.ofMillis(100));
     }
 
     @MessageMapping("camel-virtual/{client}/{filter}")
