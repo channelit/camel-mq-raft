@@ -2,8 +2,8 @@ server:
   port: 8421
 
 app:
-  in-topic: in-topic
-  out-topic: out-topic
+  in-topic: in_topic
+  out-topic: out_topic
 postgres:
   server: localhost
   port: 5432

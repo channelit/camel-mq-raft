@@ -1,7 +1,7 @@
 package biz.cits.reactive.camel;
 
 import biz.cits.reactive.db.DbInjester;
-import biz.cits.reactive.model.ClientMessage;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.LoggingLevel;
@@ -21,7 +21,7 @@ public class AmqRoute extends RouteBuilder {
 
     private final String outTopic;
 
-    public AmqRoute(@Value("${app.in-topic}") String inTopic, @Value("${app.in-topic}") String outTopic) {
+    public AmqRoute(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic) {
         this.inTopic = inTopic;
         this.outTopic = outTopic;
     }
@@ -38,12 +38,12 @@ public class AmqRoute extends RouteBuilder {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());
                     String jsonString = exchange.getMessage().getBody().toString();
-                    ClientMessage clientMessage = mapper.readValue(jsonString, ClientMessage.class);
-                    exchange.getMessage().setMessageId(clientMessage.getId().toString());
-                    exchange.getMessage().setBody(clientMessage);
+                    JsonNode jsonNode = mapper.readTree(jsonString);
+                    exchange.getMessage().setMessageId(jsonNode.get("id").asText());
+                    exchange.getMessage().setBody(jsonString);
                 })
                 .toF("jms:topic:VirtualTopic.%s", outTopic)
-                .to("reactive-streams:message-out-stream").routePolicy(inflight)
+                .to("reactive-streams:message_out_stream").routePolicy(inflight)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());

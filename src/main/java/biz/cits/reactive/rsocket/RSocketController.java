@@ -7,6 +7,8 @@ import biz.cits.reactive.model.ClientMessage;
 import biz.cits.reactive.model.Message;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.activemq.command.ActiveMQTopic;
@@ -54,55 +56,55 @@ public class RSocketController {
     }
 
     @MessageMapping("messages/{filter}")
-    public Flux<ClientMessage> getMessages(@DestinationVariable String filter) {
+    public Flux<String> getMessages(@DestinationVariable String filter) {
         logger.debug("FILTER -----> " + filter);
         return messageRepo.getMessages(filter);
     }
 
     @MessageMapping("camel/{filter}")
-    public Publisher<ClientMessage> getCamel(@DestinationVariable String filter) {
-        return Flux.from(camel.fromStream("message-out-stream", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+    public Publisher<String> getCamel(@DestinationVariable String filter) {
+        return Flux.from(camel.fromStream("message_out_stream", String.class)).filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("camel-durable/{client}/{filter}")
-    public Publisher<ClientMessage> getCamelDurable(@DestinationVariable String client, @DestinationVariable String filter) {
+    public Publisher<String> getCamelDurable(@DestinationVariable String client, @DestinationVariable String filter) {
         try {
             camelContext.addRoutes(new DurableSuscriberRouteBuilder(camelContext, client));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-durable", ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.fromStream(client.toLowerCase() + "-message-out-stream-durable", String.class)).filter(message -> applyFilter(message, filter));
     }
 
     //TODO: Works with only single connection. Use Virtual instead.
     @MessageMapping("camel-durable-direct/{client}/{filter}")
-    public Publisher<ClientMessage> getCamelDurableDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        return Flux.from(camel.from("jms:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, ClientMessage.class));
+    public Publisher<String> getCamelDurableDirect(@DestinationVariable String client, @DestinationVariable String filter) {
+        return Flux.from(camel.from("jms:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, String.class));
     }
 
     @MessageMapping("camel-virtual-direct/{client}/{filter}")
-    public Publisher<ClientMessage> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
+    public Publisher<String> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
         try {
             camelContext.addRoutes(new VirtualDirectTopicRouteBuilder(camelContext, client, outTopic));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.from("jms:topic:Consumer." + client + ".VirtualTopic." + outTopic, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("camel-virtual/{client}/{filter}")
-    public Publisher<ClientMessage> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
+    public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) {
         try {
             camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return Flux.from(camel.fromStream("message-out-stream-" + client, ClientMessage.class)).filter(message -> message.getClient().startsWith(filter));
+        return Flux.from(camel.fromStream("message_out_stream-" + client, String.class)).filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("replay/{client}")
-    public Publisher<ClientMessage> replay(@DestinationVariable String client) throws Exception {
-        return Flux.from(camel.fromStream("replay", ClientMessage.class));
+    public Publisher<String> replay(@DestinationVariable String client) throws Exception {
+        return Flux.from(camel.fromStream("replay", String.class));
     }
 
     @MessageMapping("post/{client}")
@@ -142,6 +144,19 @@ public class RSocketController {
             });
             return message;
         });
+    }
+
+    private boolean applyFilter(String message, String filter) {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = mapper.readTree(message);
+        } catch (JsonMappingException e) {
+            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return jsonNode.get("client").asText().startsWith(filter);
     }
 
 }
