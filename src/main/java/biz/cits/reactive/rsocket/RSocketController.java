@@ -54,7 +54,7 @@ public class RSocketController {
 
     @MessageMapping("messages/{filter}")
     public Flux<String> getMessages(@DestinationVariable String filter) {
-        log.debug("FILTER -----> " + filter);
+        log.info("FILTER:{}", filter);
         return messageRepo.getMessages(filter);
     }
 
