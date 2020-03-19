@@ -6,6 +6,7 @@ import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -26,12 +27,12 @@ import reactor.core.publisher.Flux;
 
 import java.net.InetSocketAddress;
 
-@RunWith(SpringRunner.class)
+//@RunWith(SpringRunner.class)
 public class RSocketTest {
 
     private static Logger log = LoggerFactory.getLogger(RSocketTest.class);
 
-    @TestConfiguration
+//    @TestConfiguration
     static class ClientConfig {
 
 //        @Bean
@@ -74,7 +75,7 @@ public class RSocketTest {
     @Autowired
     RSocket rSocket;
 
-    @Test
+    @Ignore
     public void Test() {
 //        webClient.get()
 //                .uri("/messages")
