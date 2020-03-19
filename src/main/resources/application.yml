@@ -45,3 +45,5 @@ logging:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
   level:
     biz.cit.reactive: debug
+  file:
+    name: System.out

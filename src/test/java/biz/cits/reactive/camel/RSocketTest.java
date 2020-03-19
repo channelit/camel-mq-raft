@@ -8,6 +8,8 @@ import io.rsocket.transport.netty.client.TcpClientTransport;
 import io.rsocket.util.DefaultPayload;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +28,8 @@ import java.net.InetSocketAddress;
 
 @RunWith(SpringRunner.class)
 public class RSocketTest {
+
+    private static Logger log = LoggerFactory.getLogger(RSocketTest.class);
 
     @TestConfiguration
     static class ClientConfig {
@@ -81,6 +85,6 @@ public class RSocketTest {
 //                .subscribe(System.out::println);
 
         Flux<Payload> s = rSocket.requestStream(DefaultPayload.create("messages"));
-        s.take(10).doOnNext(p -> System.out.println(p.getDataUtf8())).blockLast();
+        s.take(10).doOnNext(p -> log.info(p.getDataUtf8())).blockLast();
     }
 }

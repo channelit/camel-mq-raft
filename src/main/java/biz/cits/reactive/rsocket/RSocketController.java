@@ -21,7 +21,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
@@ -29,7 +28,7 @@ import java.time.Duration;
 @Controller
 public class RSocketController {
 
-    Logger logger = LoggerFactory.getLogger(RSocketController.class);
+    Logger log = LoggerFactory.getLogger(RSocketController.class);
 
     private final String inTopic;
 
@@ -55,7 +54,7 @@ public class RSocketController {
 
     @MessageMapping("messages/{filter}")
     public Flux<String> getMessages(@DestinationVariable String filter) {
-        logger.debug("FILTER -----> " + filter);
+        log.debug("FILTER -----> " + filter);
         return messageRepo.getMessages(filter);
     }
 
@@ -102,7 +101,7 @@ public class RSocketController {
 
     @MessageMapping("post/{client}")
     public String postMessage(@Payload String message, @DestinationVariable String client) {
-        System.out.println(message);
+        log.debug(message);
         jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
             ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
             TextMessage textMessage = messageCreator.createTextMessage(message);

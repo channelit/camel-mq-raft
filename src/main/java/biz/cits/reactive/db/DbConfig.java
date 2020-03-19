@@ -1,6 +1,8 @@
 package biz.cits.reactive.db;
 
 import org.postgresql.ds.PGSimpleDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +14,7 @@ import java.sql.Statement;
 @Configuration
 public class DbConfig {
 
+    private static Logger log = LoggerFactory.getLogger(DbConfig.class);
 
     @Value("${postgres.server}")
     private String[] pgServer;
@@ -41,7 +44,7 @@ public class DbConfig {
             stmt.execute("CREATE TABLE messages (ID UUID PRIMARY KEY, MESSAGE JSONB NOT NULL)");
             stmt.closeOnCompletion();
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            log.error(e.getMessage());
         }
         return dataSource;
     }
