@@ -40,7 +40,7 @@ public class AmqRoute extends RouteBuilder {
                     String jsonString = exchange.getMessage().getBody().toString();
                     JsonNode jsonNode = mapper.readTree(jsonString);
                     exchange.getMessage().setMessageId(jsonNode.get("id").asText());
-                    exchange.getMessage().setBody(jsonString);
+                    exchange.getMessage().setBody(jsonNode);
                 })
                 .toF("jms:topic:VirtualTopic.%s", outTopic)
                 .to("reactive-streams:message_out_stream").routePolicy(inflight)
