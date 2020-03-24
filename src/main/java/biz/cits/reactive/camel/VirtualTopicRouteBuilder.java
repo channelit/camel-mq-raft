@@ -10,28 +10,32 @@ import org.apache.camel.builder.RouteBuilder;
 public class VirtualTopicRouteBuilder extends RouteBuilder {
     private final String client;
     private final String outTopic;
+    private CamelContext context;
 
     public VirtualTopicRouteBuilder(CamelContext context, String client, String outTopic) {
         super(context);
         this.client = client;
         this.outTopic = outTopic;
+        this.context = context;
     }
 
     @Override
     public void configure() {
-        fromF("jms:topic:VirtualTopic.%s", outTopic)
-                .process(exchange -> {
-                    ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                    String jsonString = exchange.getIn().getBody().toString();
-                    JsonNode jsonNode = null;
-                    try {
-                        jsonNode = mapper.readTree(jsonString);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                    exchange.getMessage().setMessageId(jsonNode.get("id").asText());
-                    exchange.getMessage().setBody(jsonString);
-                })
-                .toF("reactive-streams:%s_%s", client, outTopic);
+        if (!context.getRoutes().contains(client)) {
+            fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
+                    .process(exchange -> {
+                        ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+                        String jsonString = exchange.getIn().getBody().toString();
+                        JsonNode jsonNode = null;
+                        try {
+                            jsonNode = mapper.readTree(jsonString);
+                        } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                        }
+                        exchange.getMessage().setMessageId(jsonNode.get("id").asText());
+                        exchange.getMessage().setBody(jsonNode);
+                    })
+                    .toF("reactive-streams:%s_%s", client, outTopic).id(client);
+        }
     }
 }
