@@ -87,7 +87,14 @@ public class RSocketController {
     @MessageMapping("camel-virtual/{client}/{filter}")
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnTerminate(()-> System.out.println("Terminate Client >>>>>>>>> " + client));
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> {
+            try {
+                camelContext.getRoute(client).getConsumer().stop();
+                System.out.println(" Route Removed >>>> " + camelContext.removeRoute(client));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     @MessageMapping("replay/{client}")

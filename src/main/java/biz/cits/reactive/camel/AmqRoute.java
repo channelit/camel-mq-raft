@@ -34,6 +34,7 @@ public class AmqRoute extends RouteBuilder {
 
         fromF("jms:topic:%s", inTopic)
                 .log(LoggingLevel.DEBUG, log, "in message")
+                .toF("jms:topic:VirtualTopic.%s", outTopic)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();
                     mapper.registerModule(new JavaTimeModule());
@@ -42,7 +43,6 @@ public class AmqRoute extends RouteBuilder {
                     exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                     exchange.getMessage().setBody(jsonNode);
                 })
-                .toF("jms:topic:VirtualTopic.%s", outTopic)
                 .to("reactive-streams:message_out_stream").routePolicy(inflight)
                 .process(exchange -> {
                     ObjectMapper mapper = new ObjectMapper();

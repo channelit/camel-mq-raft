@@ -21,7 +21,7 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
-        if (!context.getRoutes().contains(client)) {
+        if (context.hasEndpoint(String.format("reactive-streams:%s_%s", client, outTopic)) == null) {
             fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
                     .process(exchange -> {
                         ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
@@ -35,7 +35,9 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                         exchange.getMessage().setBody(jsonNode);
                     })
-                    .toF("reactive-streams:%s_%s", client, outTopic).id(client);
+                    .toF("reactive-streams:%s_%s", client, outTopic).setId(client);
+        } else {
+            context.getRoute(client).getConsumer().start();
         }
     }
 }
