@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
@@ -46,7 +47,7 @@ public class RSocketController {
         this.inTopic = inTopic;
         this.outTopic = outTopic;
         this.jmsTemplate = jmsTemplate;
-        jmsTemplate.setPubSubDomain(true);
+//        jmsTemplate.setPubSubDomain(true);
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
@@ -105,7 +106,7 @@ public class RSocketController {
     @MessageMapping("post/{client}")
     public String postMessage(@Payload String message, @DestinationVariable String client) {
         log.debug(message);
-        jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
+        jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
             ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
             TextMessage textMessage = messageCreator.createTextMessage(message);
             JsonNode jsonNode = null;
@@ -124,7 +125,7 @@ public class RSocketController {
     @MessageMapping("posts/{client}")
     public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            jmsTemplate.send(new ActiveMQTopic(inTopic), messageCreator -> {
+            jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
                 TextMessage textMessage = messageCreator.createTextMessage(message);
                 ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
                 JsonNode jsonNode = null;
