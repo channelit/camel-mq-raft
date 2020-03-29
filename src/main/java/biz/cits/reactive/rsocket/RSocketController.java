@@ -4,12 +4,11 @@ import biz.cits.reactive.camel.DurableSuscriberRouteBuilder;
 import biz.cits.reactive.camel.VirtualTopicRouteBuilder;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.activemq.command.ActiveMQTopic;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
@@ -42,6 +41,8 @@ public class RSocketController {
     private final CamelReactiveStreamsService camel;
 
     private final CamelContext camelContext;
+
+    private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
         this.inTopic = inTopic;
@@ -106,8 +107,12 @@ public class RSocketController {
     @MessageMapping("post/{client}")
     public String postMessage(@Payload String message, @DestinationVariable String client) {
         log.debug(message);
+        generateMessage(message, client);
+        return "ok";
+    }
+
+    private void generateMessage(String message, String client) {
         jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
-            ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
             TextMessage textMessage = messageCreator.createTextMessage(message);
             JsonNode jsonNode = null;
             try {
@@ -119,36 +124,20 @@ public class RSocketController {
             textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
             return textMessage;
         });
-        return "ok";
     }
 
     @MessageMapping("posts/{client}")
     public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
-                TextMessage textMessage = messageCreator.createTextMessage(message);
-                ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-                JsonNode jsonNode = null;
-                try {
-                    jsonNode = mapper.readTree(message);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
-                textMessage.setStringProperty("client", client);
-                textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
-                return textMessage;
-            });
+            generateMessage(message, client);
             return message;
         });
     }
 
     private boolean applyFilter(String message, String filter) {
-        ObjectMapper mapper = new ObjectMapper();
         JsonNode jsonNode = null;
         try {
             jsonNode = mapper.readTree(message);
-        } catch (JsonMappingException e) {
-            e.printStackTrace();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
