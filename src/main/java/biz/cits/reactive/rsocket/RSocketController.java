@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
@@ -15,6 +16,7 @@ import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 
 import javax.jms.TextMessage;
+import java.io.IOException;
 import java.time.Duration;
 
 @Controller
@@ -100,7 +103,7 @@ public class RSocketController {
     }
 
     @MessageMapping("replay/{client}")
-    public Publisher<String> replay(@DestinationVariable String client) throws Exception {
+    public Publisher<String> replay(@DestinationVariable String client) {
         return Flux.from(camel.fromStream("replay", String.class));
     }
 
@@ -111,7 +114,7 @@ public class RSocketController {
         return "ok";
     }
 
-    private void generateMessage(String message, String client) {
+    private void generateMessage(String message, String client) throws JmsException {
         jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
             TextMessage textMessage = messageCreator.createTextMessage(message);
             JsonNode jsonNode = null;
@@ -129,8 +132,14 @@ public class RSocketController {
     @MessageMapping("posts/{client}")
     public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
         return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            generateMessage(message, client);
-            return message;
+            ObjectNode jsonNode = mapper.createObjectNode();
+            try {
+                generateMessage(message, client);
+                jsonNode.put("message", "ok");
+            } catch (JmsException e) {
+                jsonNode.put("message", "error");
+            }
+            return jsonNode.toString();
         });
     }
 
