@@ -137,7 +137,7 @@ public class RSocketController {
                 generateMessage(message, client);
                 jsonNode.put("message", "ok");
             } catch (JmsException e) {
-                jsonNode.put("message", "error");
+                jsonNode.put("error", e.getMessage());
             }
             return jsonNode.toString();
         });
