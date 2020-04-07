@@ -110,37 +110,34 @@ public class RSocketController {
     @MessageMapping("post/{client}")
     public String postMessage(@Payload String message, @DestinationVariable String client) {
         log.debug(message);
-        generateMessage(message, client);
-        return "ok";
+        return generateMessage(message, client);
     }
 
-    private void generateMessage(String message, String client) throws JmsException {
-        jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
-            TextMessage textMessage = messageCreator.createTextMessage(message);
-            JsonNode jsonNode = null;
-            try {
-                jsonNode = mapper.readTree(message);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-            textMessage.setStringProperty("client", client);
-            textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
-            return textMessage;
-        });
+    private String generateMessage(String message, String client) {
+        ObjectNode response = mapper.createObjectNode();
+        try {
+            jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
+                TextMessage textMessage = messageCreator.createTextMessage(message);
+                JsonNode jsonNode = null;
+                try {
+                    jsonNode = mapper.readTree(message);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                textMessage.setStringProperty("client", client);
+                textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
+                return textMessage;
+            });
+            response.put("message", "ok");
+        } catch (JmsException e) {
+            response.put("error", e.getMessage());
+        }
+        return response.toString();
     }
 
     @MessageMapping("posts/{client}")
     public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
-        return messages.delayElements(Duration.ofMillis(100)).map(message -> {
-            ObjectNode jsonNode = mapper.createObjectNode();
-            try {
-                generateMessage(message, client);
-                jsonNode.put("message", "ok");
-            } catch (JmsException e) {
-                jsonNode.put("error", e.getMessage());
-            }
-            return jsonNode.toString();
-        });
+        return messages.delayElements(Duration.ofMillis(100)).map(message -> generateMessage(message, client));
     }
 
     private boolean applyFilter(String message, String filter) {
