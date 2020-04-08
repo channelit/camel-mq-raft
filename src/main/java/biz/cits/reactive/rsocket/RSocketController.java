@@ -115,21 +115,17 @@ public class RSocketController {
 
     private String generateMessage(String message, String client) {
         ObjectNode response = mapper.createObjectNode();
+        JsonNode jsonNode;
         try {
+            jsonNode = mapper.readTree(message);
             jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
                 TextMessage textMessage = messageCreator.createTextMessage(message);
-                JsonNode jsonNode = null;
-                try {
-                    jsonNode = mapper.readTree(message);
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                }
                 textMessage.setStringProperty("client", client);
                 textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
                 return textMessage;
             });
             response.put("message", "ok");
-        } catch (JmsException e) {
+        } catch (JmsException | JsonProcessingException e) {
             response.put("error", e.getMessage());
         }
         return response.toString();
