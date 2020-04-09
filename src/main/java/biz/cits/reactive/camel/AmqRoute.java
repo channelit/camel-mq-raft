@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.apache.camel.ExchangeProperties;
 import org.apache.camel.LoggingLevel;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.throttling.ThrottlingInflightRoutePolicy;
 import org.slf4j.Logger;
@@ -35,6 +37,8 @@ public class AmqRoute extends RouteBuilder {
         inflight.setMaxInflightExchanges(2000);
         inflight.setResumePercentOfMax(25);
 
+        onException(IllegalArgumentException.class).continued(true);
+
         fromF("jms:queue:%s", inTopic)
                 .log(LoggingLevel.DEBUG, log, "in message")
                 .toF("jms:topic:VirtualTopic.%s", outTopic)
@@ -44,7 +48,8 @@ public class AmqRoute extends RouteBuilder {
                     exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                     exchange.getMessage().setBody(jsonNode);
                 })
-                .to("reactive-streams:message_out_stream").routePolicy(inflight)
+                .doTry()
+                .to("reactive-streams:message_out_stream").doCatch(IllegalStateException.class).doFinally().endDoTry()
                 .process(exchange -> {
                     exchange.getMessage().setBody(mapper.writeValueAsString(exchange.getMessage().getBody()));
                 })
