@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.rsocket.util.DefaultPayload;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -55,6 +57,14 @@ public class RSocketController {
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
+    }
+
+    @MessageMapping("")
+    public Flux<String> routeMessage(String payload) {
+        log.info("FILTER:{}", payload);
+        System.out.println(payload);
+        DefaultPayload.create("");
+        return messageRepo.getMessages(payload);
     }
 
     @MessageMapping("messages/{filter}")
@@ -109,6 +119,7 @@ public class RSocketController {
 
     @MessageMapping("post/{client}")
     public String postMessage(@Payload String message, @DestinationVariable String client) {
+        System.out.println(message);
         log.debug(message);
         return generateMessage(message, client);
     }
@@ -126,6 +137,7 @@ public class RSocketController {
             });
             response.put("message", "ok");
         } catch (JmsException | JsonProcessingException e) {
+            e.printStackTrace();
             response.put("error", e.getMessage());
         }
         return response.toString();
