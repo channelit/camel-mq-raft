@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.rsocket.util.DefaultPayload;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
@@ -19,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
-import org.springframework.messaging.Message;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 
 import javax.jms.TextMessage;
-import java.io.IOException;
 import java.time.Duration;
 
 @Controller
@@ -60,11 +57,20 @@ public class RSocketController {
     }
 
     @MessageMapping("")
-    public Flux<String> routeMessage(String payload) {
-        log.info("FILTER:{}", payload);
-        System.out.println(payload);
-        DefaultPayload.create("");
-        return messageRepo.getMessages(payload);
+    public Flux<String> routeMessage(@Payload String message) {
+        log.info("FILTER:{}", message);
+        System.out.println(message);
+        String filter;
+        try {
+            JsonNode node = mapper.readTree(message);
+            filter = node.get("filter").asText();
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            ObjectNode response = mapper.createObjectNode();
+            response.put("error", e.getMessage());
+            return Flux.just(response.asText());
+        }
+        return getMessages(filter);
     }
 
     @MessageMapping("messages/{filter}")
