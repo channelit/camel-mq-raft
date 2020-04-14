@@ -1,7 +1,6 @@
 package biz.cits.reactive.rsocket;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.rsocket.RSocketProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.boot.rsocket.netty.NettyRSocketServerFactory;
