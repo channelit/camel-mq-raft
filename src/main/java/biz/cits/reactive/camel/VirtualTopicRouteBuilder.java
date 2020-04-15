@@ -11,8 +11,8 @@ import org.apache.camel.builder.RouteBuilder;
 public class VirtualTopicRouteBuilder extends RouteBuilder {
     private final String client;
     private final String outTopic;
-    private CamelContext context;
-    private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    private final CamelContext context;
+    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     public VirtualTopicRouteBuilder(CamelContext context, String client, String outTopic) {
         super(context);

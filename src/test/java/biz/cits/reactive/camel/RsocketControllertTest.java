@@ -1,6 +1,11 @@
 package biz.cits.reactive.camel;
 
 import biz.cits.reactive.rsocket.RSocketController;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.rsocket.RSocket;
 import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
@@ -25,6 +30,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.function.Function;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
@@ -32,6 +39,8 @@ import static org.mockito.Mockito.verify;
 @TestPropertySource(locations = {"classpath:application.yml"})
 @SpringBootTest
 public class RsocketControllertTest {
+
+    private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
     @Autowired
     private RSocketRequester rSocketRequester;
@@ -44,16 +53,25 @@ public class RsocketControllertTest {
 
     @Test
     @DisplayName("JSON Parser Error Test")
-    public void JsonErrorTest() throws Exception {
-        Mono<String> response = rSocketRequester.route("post/me").data("{Invalid JSON}").retrieveMono(String.class);
+    public void JsonErrorTest() {
+        Mono<String> response = rSocketRequester.route("post/me").data("{Invalid JSON}").retrieveMono(String.class).map(this::parseJson);
 //        verify(rSocketController).getCamelVirtual(any(), any());
-        String expected = "{\"error\":\"Unrecognized token 'Invalid': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false') at [Source: (String)\\\"Invalid JSON\\\"; line: 1, column: 8]\"})";
         StepVerifier.create(response)
-                .expectNextCount(1)
+                .expectNext("True")
                 .expectComplete()
                 .verify();
 
 
+    }
+
+    private String parseJson(String m) {
+        try {
+            JsonNode jsonNode = mapper.readTree(m);
+            return jsonNode.has("error") ? "True" : "False";
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return "False";
+        }
     }
 
     @TestConfiguration

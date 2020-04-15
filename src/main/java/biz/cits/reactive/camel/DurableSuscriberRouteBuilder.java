@@ -11,7 +11,7 @@ import org.apache.camel.builder.RouteBuilder;
 //TODO: Work in progress. Use virtual route.
 public class DurableSuscriberRouteBuilder extends RouteBuilder {
     private String client;
-    private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
 
     public DurableSuscriberRouteBuilder(CamelContext context, String client) {
