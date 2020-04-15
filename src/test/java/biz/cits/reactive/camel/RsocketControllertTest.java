@@ -45,17 +45,13 @@ public class RsocketControllertTest {
     @Autowired
     private RSocketRequester rSocketRequester;
 
-    @SpyBean
-    private RSocketController rSocketController;
-
     @Autowired
     private JmsTemplate mockJmsTemplate;
 
     @Test
     @DisplayName("JSON Parser Error Test")
-    public void JsonErrorTest() {
-        Mono<String> response = rSocketRequester.route("post/me").data("{Invalid JSON}").retrieveMono(String.class).map(this::parseJson);
-//        verify(rSocketController).getCamelVirtual(any(), any());
+    public void JsonErrorTest() throws Exception {
+        Mono<String> response = rSocketRequester.route("post/me").data("Invalid JSON").retrieveMono(String.class).map(this::parseJson);
         StepVerifier.create(response)
                 .expectNext("True")
                 .expectComplete()
