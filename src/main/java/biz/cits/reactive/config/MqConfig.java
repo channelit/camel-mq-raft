@@ -24,11 +24,4 @@ public class MqConfig {
         return  jmsComponent;
     }
 
-    @Bean
-    public JmsTemplate orderJmsTemplate(final ConnectionFactory connectionFactory) {
-        JmsTemplate jmsTemplate =
-                new JmsTemplate(connectionFactory);
-        jmsTemplate.setReceiveTimeout(5000);
-        return jmsTemplate;
-    }
 }
