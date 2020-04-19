@@ -4,7 +4,6 @@ import org.apache.camel.component.jms.JmsComponent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.connection.JmsTransactionManager;
-import org.springframework.jms.core.JmsTemplate;
 
 import javax.jms.ConnectionFactory;
 

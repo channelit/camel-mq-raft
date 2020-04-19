@@ -1,4 +1,4 @@
-package biz.cits.reactive.camel;
+package biz.cits.reactive.rsocket;
 
 import biz.cits.reactive.rsocket.RSocketController;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -36,8 +36,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 
 @RunWith(SpringRunner.class)
-@TestPropertySource(locations = {"classpath:application.yml"})
 @SpringBootTest
+@TestPropertySource(locations = {"classpath:application.yml", "classpath:application-test.properties"})
 public class RsocketControllertTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
