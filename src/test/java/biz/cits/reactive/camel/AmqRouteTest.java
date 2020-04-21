@@ -13,9 +13,9 @@ import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.component.mock.MockEndpoint;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
-import org.apache.camel.test.spring.CamelSpringRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jms.core.JmsTemplate;
@@ -28,9 +28,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
-@RunWith(CamelSpringRunner.class)
 @SpringBootTest
-@TestPropertySource(properties = {"spring.activemq.broker-url=vm://localhost?broker.persistent=false"})
+@TestPropertySource(properties = {"spring.activemq.broker-url=vm://localhost?broker.persistent=false", "spring.rsocket.server.port=7001"})
 public class AmqRouteTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
@@ -88,6 +87,7 @@ public class AmqRouteTest {
                     receptionLatch.countDown();
                 }
         );
+        Assert.assertThat(receptionLatch.getCount(), Matchers.equalTo(1L));
 
     }
 
