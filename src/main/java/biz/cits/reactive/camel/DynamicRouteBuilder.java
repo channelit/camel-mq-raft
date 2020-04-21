@@ -12,8 +12,9 @@ public class DynamicRouteBuilder extends RouteBuilder {
         this.from = from;
         this.to = to;
     }
+
     @Override
     public void configure() throws Exception {
-        from(from).to(to);
+        from(from).to(to).id(from + "-" + to);
     }
 }

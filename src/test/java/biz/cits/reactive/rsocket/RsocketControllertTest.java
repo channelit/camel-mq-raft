@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @SpringBootTest
-@TestPropertySource(locations = {"classpath:application.yml"})
+@TestPropertySource(locations = {"classpath:application.yml", "classpath:application-test.yml"})
 public class RsocketControllertTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
