@@ -14,15 +14,13 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(CamelSpringRunner.class)
-@BootstrapWith(CamelTestContextBootstrapper.class)
 @SpringBootTest
-@ContextConfiguration
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-@MockEndpoints("log:*")
-@DisableJmx(false)
-@TestPropertySource(locations = {"classpath:application-test.properties"})
+@TestPropertySource(locations = {"classpath:application.yml"})
+@MockEndpoints("jms:*")
 public class AmqRouteTest {
 
     @Autowired
@@ -33,10 +31,10 @@ public class AmqRouteTest {
     @EndpointInject(value = "mock:c")
     protected MockEndpoint mockC;
 
-    @Produce(uri = "direct:start2")
+    @Produce("direct:start2")
     protected ProducerTemplate start2;
 
-    @EndpointInject(value = "mock:log:org.apache.camel.test.junit4.spring")
+    @EndpointInject(value = "mock:log:biz.cits.reactive")
     protected MockEndpoint mockLog;
 
     @Test
