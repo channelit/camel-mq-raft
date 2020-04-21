@@ -1,6 +1,7 @@
 package biz.cits.reactive.message;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 public class MsgGenerator {
@@ -9,10 +10,15 @@ public class MsgGenerator {
     private static String[] clients = new String[]{"ABCDE", "ABCDF", "ABCDG"};
 
     private static Map<String, Integer> clientMessageIds = Collections.synchronizedMap(new HashMap<>());
+    static AtomicInteger ctr = new AtomicInteger(0);
 
     private static String getClient() {
-        int rnd = new Random().nextInt(clients.length);
-        return clients[rnd];
+        if (ctr.get() == clients.length - 1) {
+            ctr.set(0);
+        } else {
+            ctr.set(ctr.addAndGet(1));
+        }
+        return clients[ctr.get()];
     }
 
     public static ArrayList<Map.Entry<String, String>> getMessages(int numMessage) {

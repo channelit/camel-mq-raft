@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
-@TestPropertySource(locations = {"classpath:application.yml", "classpath:application-test.properties"})
+@TestPropertySource(locations = {"classpath:application.yml"})
 public class RsocketControllertTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
