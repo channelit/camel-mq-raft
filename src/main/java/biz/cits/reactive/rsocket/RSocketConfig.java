@@ -1,5 +1,6 @@
 package biz.cits.reactive.rsocket;
 
+import io.rsocket.RSocketFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.rsocket.RSocketProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
@@ -18,6 +19,11 @@ public class RSocketConfig {
     @Bean
     ReactorResourceFactory reactorResourceFactory() {
         return new ReactorResourceFactory();
+    }
+
+    @Bean
+    ServerRSocketFactoryProcessor serverRSocketFactoryProcessor() {
+        return RSocketFactory.ServerRSocketFactory::resume;
     }
 
     @Bean
