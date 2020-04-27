@@ -1,6 +1,7 @@
 package biz.cits.reactive.rsocket;
 
 import biz.cits.reactive.camel.DurableSuscriberRouteBuilder;
+import biz.cits.reactive.camel.ReplayRouteBuilder;
 import biz.cits.reactive.camel.VirtualTopicRouteBuilder;
 import biz.cits.reactive.model.ClientMessageRepo;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -22,10 +23,14 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Flux;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
+import java.util.Optional;
 
 @Controller
 public class RSocketController {
@@ -108,19 +113,22 @@ public class RSocketController {
     @MessageMapping("camel-virtual/{client}/{filter}")
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> {
-            try {
-                camelContext.getRoute(client).getConsumer().stop();
-                System.out.println(" Route Removed >>>> " + camelContext.removeRoute(client));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute(client));
     }
 
     @MessageMapping("replay/{client}")
-    public Publisher<String> replay(@DestinationVariable String client) {
-        return Flux.from(camel.fromStream("replay", String.class));
+    public Publisher<String> replay(@DestinationVariable String client, @Payload String jsonQuery) throws Exception {
+        camelContext.addRoutes(new ReplayRouteBuilder(camelContext, client, jsonQuery));
+        return Flux.from(camel.fromStream("replay_" + client, String.class)).doOnComplete(() ->terminateRoute("replay_" + client));
+    }
+
+    private void terminateRoute(String routeId) {
+        try {
+            camelContext.getRoute(routeId).getConsumer().stop();
+            System.out.println(" Route Removed >>>> " + camelContext.removeRoute(routeId));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @MessageMapping("post/{client}")

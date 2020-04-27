@@ -4,6 +4,8 @@ server:
 app:
   in-topic: in_topic
   out-topic: out_topic
+  table-name: messages
+
 postgres:
   server: localhost
   port: 5432
@@ -14,7 +16,6 @@ postgres:
 spring:
   activemq:
     broker-url: tcp://localhost:61616
-
     pool:
       enabled: false
       max-connections: 100
