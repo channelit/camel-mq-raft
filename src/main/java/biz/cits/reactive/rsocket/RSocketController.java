@@ -23,14 +23,10 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Flux;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
-import java.util.Optional;
 
 @Controller
 public class RSocketController {
@@ -116,15 +112,16 @@ public class RSocketController {
         return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute(client));
     }
 
-    @MessageMapping("replay/{client}")
-    public Publisher<String> replay(@DestinationVariable String client, @Payload String jsonQuery) throws Exception {
+    @MessageMapping("replay/{client}/{filter}")
+    public Publisher<String> replay(@DestinationVariable String client, @DestinationVariable String filter, @Payload String jsonQuery) throws Exception {
+        terminateRoute("replay_" + client);
         camelContext.addRoutes(new ReplayRouteBuilder(camelContext, client, jsonQuery));
-        return Flux.from(camel.fromStream("replay_" + client, String.class)).doOnComplete(() ->terminateRoute("replay_" + client));
+        return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client)).doOnComplete(() -> terminateRoute("replay_" + client));
     }
 
     private void terminateRoute(String routeId) {
         try {
-            camelContext.getRoute(routeId).getConsumer().stop();
+            camelContext.getRoute(routeId).getConsumer().close();
             System.out.println(" Route Removed >>>> " + camelContext.removeRoute(routeId));
         } catch (Exception e) {
             e.printStackTrace();
