@@ -116,7 +116,11 @@ public class RSocketController {
     public Publisher<String> replay(@DestinationVariable String client, @DestinationVariable String filter, @Payload String jsonQuery) throws Exception {
         terminateRoute("replay_" + client);
         camelContext.addRoutes(new ReplayRouteBuilder(camelContext, client, jsonQuery));
-        return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client)).doOnComplete(() -> terminateRoute("replay_" + client));
+        return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client)).doOnComplete(() -> terminateRoute("replay_" + client)).doOnComplete(
+                () -> {
+                    System.out.println("Done");
+        }
+        );
     }
 
     private void terminateRoute(String routeId) {
