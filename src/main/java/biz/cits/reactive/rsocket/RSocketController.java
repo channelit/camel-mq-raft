@@ -58,20 +58,30 @@ public class RSocketController {
     }
 
     @MessageMapping("")
-    public Flux<String> routeMessage(@Payload String message) {
+    public Publisher<String> routeMessage(@Payload String message) throws Exception {
         log.info("FILTER:{}", message);
         System.out.println(message);
-        String filter;
+        String filter, route, client, data;
         try {
             JsonNode node = mapper.readTree(message);
             filter = node.get("filter").asText();
+            route = node.get("route").asText();
+            client = node.get("client").asText();
+            data = node.get("data").asText();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             ObjectNode response = mapper.createObjectNode();
             response.put("error", e.getMessage());
             return Flux.just(response.asText());
         }
-        return getMessages(filter);
+        switch (route) {
+            case "subscribe":
+                return getCamelVirtual(client, filter);
+            case "replay":
+                return replay(client, filter, data);
+            default:
+                return getMessages(filter);
+        }
     }
 
     @MessageMapping("messages/{filter}")
@@ -119,7 +129,7 @@ public class RSocketController {
         return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client)).doOnComplete(() -> terminateRoute("replay_" + client)).doOnComplete(
                 () -> {
                     System.out.println("Done");
-        }
+                }
         );
     }
 
