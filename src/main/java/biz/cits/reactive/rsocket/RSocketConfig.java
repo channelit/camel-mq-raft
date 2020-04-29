@@ -1,20 +1,20 @@
 package biz.cits.reactive.rsocket;
 
-import biz.cits.reactive.Server;
 import io.rsocket.RSocketFactory;
-import io.rsocket.core.RSocketConnector;
+import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketServer;
 import io.rsocket.core.Resume;
 import io.rsocket.resume.InMemoryResumableFramesStore;
-import io.rsocket.resume.ResumableDuplexConnection;
-import io.rsocket.transport.ClientTransport;
+import io.rsocket.transport.ServerTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.rsocket.RSocketProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
+import org.springframework.boot.rsocket.netty.NettyRSocketServer;
 import org.springframework.boot.rsocket.netty.NettyRSocketServerFactory;
 import org.springframework.boot.rsocket.server.RSocketServerFactory;
 import org.springframework.boot.rsocket.server.ServerRSocketFactoryProcessor;
@@ -26,7 +26,7 @@ import org.springframework.http.codec.cbor.Jackson2CborEncoder;
 import org.springframework.messaging.rsocket.RSocketStrategies;
 import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
-import reactor.util.retry.Retry;
+import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.stream.Collectors;
@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
 public class RSocketConfig {
 
     Logger logger = LoggerFactory.getLogger(RSocketConfig.class);
+
+    @Autowired
+    RSocketProperties properties;
 
     @Bean
     Resume resume() {
@@ -60,27 +63,31 @@ public class RSocketConfig {
                 .build();
     }
 
-    @Bean
-    CloseableChannel closeableChannel() {
-        return
-                RSocketServer.create()
-                        .resume(resume())
-                        .acceptor(rsocketMessageHandler().responder())
-                        .bind(TcpServerTransport.create("localhost", 7000))
-                        .cache()
-                        .block();
-    }
-
-//    @Bean
-//    RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
-//                                              ObjectProvider<ServerRSocketFactoryProcessor> processors) {
-//        NettyRSocketServerFactory factory = new NettyRSocketServerFactory();
-//        factory.setResourceFactory(reactorResourceFactory);
-//        factory.setTransport(properties.getServer().getTransport());
-//        PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
-//        map.from(properties.getServer().getAddress()).to(factory::setAddress);
-//        map.from(properties.getServer().getPort()).to(factory::setPort);
-//        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
-//        return factory;
+//    Mono<CloseableChannel> closeableChannel() {
+//        return
+//                RSocketServer.create()
+//                        .resume(resume())
+//                        .acceptor(rsocketMessageHandler().responder())
+//                        .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
+//                        .cache();
 //    }
+//
+//    @Bean
+//    public NettyRSocketServer create(SocketAcceptor socketAcceptor) {
+//        Mono<CloseableChannel> starter = closeableChannel();
+//        return new NettyRSocketServer(starter, Duration.ofMillis(100));
+//    }
+
+    @Bean
+    RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
+                                              ObjectProvider<ServerRSocketFactoryProcessor> processors) {
+        NettyRSocketServerFactory factory = new NettyRSocketServerFactory();
+        factory.setResourceFactory(reactorResourceFactory);
+        factory.setTransport(properties.getServer().getTransport());
+        PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
+        map.from(properties.getServer().getAddress()).to(factory::setAddress);
+        map.from(properties.getServer().getPort()).to(factory::setPort);
+        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
+        return factory;
+    }
 }

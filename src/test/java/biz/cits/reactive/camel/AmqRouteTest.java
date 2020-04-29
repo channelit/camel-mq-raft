@@ -29,7 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 @SpringBootTest
-@TestPropertySource(properties = {"spring.activemq.broker-url=vm://localhost?broker.persistent=false", "spring.rsocket.server.port=7001"})
+@TestPropertySource(properties = {"spring.activemq.broker-url=vm://localhost?broker.persistent=false", "spring.rsocket.server.port=7001", "spring.rsocket.server.address=localhost"})
 public class AmqRouteTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
