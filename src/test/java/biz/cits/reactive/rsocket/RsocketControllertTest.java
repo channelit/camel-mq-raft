@@ -28,7 +28,7 @@ import reactor.test.StepVerifier;
 
 @SpringBootTest
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_CLASS)
-@TestPropertySource(locations = {"classpath:application.yml", "classpath:application-test.yml"})
+@TestPropertySource(locations = {"classpath:application.yml", "classpath:application-test.yml"}, properties = {"spring.rsocket.server.port=7001"})
 public class RsocketControllertTest {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
@@ -70,7 +70,7 @@ public class RsocketControllertTest {
             return RSocketFactory.connect()
                     .mimeType(WellKnownMimeType.MESSAGE_RSOCKET_ROUTING.toString(), WellKnownMimeType.APPLICATION_CBOR.toString())
                     .frameDecoder(PayloadDecoder.ZERO_COPY)
-                    .transport(TcpClientTransport.create(7000))
+                    .transport(TcpClientTransport.create(7001))
                     .start()
                     .block();
         }
@@ -83,7 +83,7 @@ public class RsocketControllertTest {
                             .dataMimeType(MimeTypeUtils.ALL_VALUE)
                             .frameDecoder(PayloadDecoder.ZERO_COPY))
                     .rsocketStrategies(strategies)
-                    .connect(TcpClientTransport.create("localhost", 7000))
+                    .connect(TcpClientTransport.create("localhost", 7001))
                     .retry().block();
         }
     }

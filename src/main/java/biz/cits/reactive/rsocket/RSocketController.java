@@ -24,6 +24,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
@@ -68,6 +69,7 @@ public class RSocketController {
             route = node.get("route").asText();
             client = node.get("client").asText();
             data = node.get("data").asText();
+            log.info("route message client={}", kv("appId", client));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
             ObjectNode response = mapper.createObjectNode();
@@ -158,6 +160,7 @@ public class RSocketController {
                 TextMessage textMessage = messageCreator.createTextMessage(message);
                 textMessage.setStringProperty("client", client);
                 textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
+                log.info("{},{}", kv("client", client), kv("messageId", textMessage.getJMSCorrelationID()));
                 return textMessage;
             });
             response.put("message", "ok");

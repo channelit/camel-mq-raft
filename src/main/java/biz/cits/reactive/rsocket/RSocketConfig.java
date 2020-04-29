@@ -35,7 +35,8 @@ public class RSocketConfig {
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         map.from(properties.getServer().getAddress()).to(factory::setAddress);
         map.from(properties.getServer().getPort()).to(factory::setPort);
-        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
+//        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
+        factory.addSocketFactoryProcessors(serverRSocketFactoryProcessor());
         return factory;
     }
 }
