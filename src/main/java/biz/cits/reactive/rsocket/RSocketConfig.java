@@ -22,11 +22,6 @@ public class RSocketConfig {
     }
 
     @Bean
-    ServerRSocketFactoryProcessor serverRSocketFactoryProcessor() {
-        return RSocketFactory.ServerRSocketFactory::resume;
-    }
-
-    @Bean
     RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
                                               ObjectProvider<ServerRSocketFactoryProcessor> processors) {
         NettyRSocketServerFactory factory = new NettyRSocketServerFactory();
@@ -35,8 +30,7 @@ public class RSocketConfig {
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         map.from(properties.getServer().getAddress()).to(factory::setAddress);
         map.from(properties.getServer().getPort()).to(factory::setPort);
-//        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
-        factory.addSocketFactoryProcessors(serverRSocketFactoryProcessor());
+        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
         return factory;
     }
 }

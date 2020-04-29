@@ -24,6 +24,7 @@ spring:
       port: 7000
       transport: tcp
       address: 0.0.0.0
+      mapping-path:
 
 camel:
   springboot:
