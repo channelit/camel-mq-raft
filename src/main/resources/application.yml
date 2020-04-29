@@ -19,12 +19,12 @@ spring:
     pool:
       enabled: false
       max-connections: 100
-  rsocket:
-    server:
-      port: 7000
-      transport: tcp
-      address: 0.0.0.0
-      mapping-path:
+#  rsocket:
+#    server:
+#      port: 7000
+#      transport: tcp
+#      address: 0.0.0.0
+#      mapping-path:
 
 camel:
   springboot:
