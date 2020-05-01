@@ -16,6 +16,7 @@ import org.springframework.boot.autoconfigure.rsocket.RSocketProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
 import org.springframework.boot.rsocket.netty.NettyRSocketServer;
 import org.springframework.boot.rsocket.netty.NettyRSocketServerFactory;
+import org.springframework.boot.rsocket.server.RSocketServerCustomizer;
 import org.springframework.boot.rsocket.server.RSocketServerFactory;
 import org.springframework.boot.rsocket.server.ServerRSocketFactoryProcessor;
 import org.springframework.context.annotation.Bean;
@@ -79,15 +80,19 @@ public class RSocketConfig {
 //    }
 
     @Bean
+    RSocketServerCustomizer rSocketServerCustomizer() {
+        return rSocketServer -> rSocketServer.resume(resume());
+    }
+    @Bean
     RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
                                               ObjectProvider<ServerRSocketFactoryProcessor> processors) {
         NettyRSocketServerFactory factory = new NettyRSocketServerFactory();
         factory.setResourceFactory(reactorResourceFactory);
         factory.setTransport(properties.getServer().getTransport());
+        factory.addRSocketServerCustomizers(rSocketServerCustomizer());
         PropertyMapper map = PropertyMapper.get().alwaysApplyingWhenNonNull();
         map.from(properties.getServer().getAddress()).to(factory::setAddress);
         map.from(properties.getServer().getPort()).to(factory::setPort);
-        factory.setSocketFactoryProcessors(processors.orderedStream().collect(Collectors.toList()));
         return factory;
     }
 }

@@ -79,6 +79,8 @@ public class RSocketController {
         switch (route) {
             case "subscribe":
                 return getCamelVirtual(client, filter);
+            case "post":
+                return postMessage(data, client);
             case "replay":
                 return replay(client, filter, data);
             default:
@@ -145,11 +147,12 @@ public class RSocketController {
     }
 
     @MessageMapping("post/{client}")
-    public String postMessage(@Payload String message, @DestinationVariable String client) {
+    public Publisher<String> postMessage(@Payload String message, @DestinationVariable String client) {
         System.out.println(message);
         log.debug(message);
-        return generateMessage(message, client);
+        return Flux.just(generateMessage(message, client));
     }
+
 
     private String generateMessage(String message, String client) {
         ObjectNode response = mapper.createObjectNode();
