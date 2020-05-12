@@ -14,6 +14,7 @@ import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,8 +23,10 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
+
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import javax.jms.TextMessage;
@@ -59,7 +62,7 @@ public class RSocketController {
     }
 
     @MessageMapping("")
-    public Publisher<String> routeMessage(@Payload String message) throws Exception {
+    public Publisher<String> routeMessage(@Payload String message, RSocketRequester requester) throws Exception {
         log.info("FILTER:{}", message);
         System.out.println(message);
         String filter, route, client, data;
@@ -123,24 +126,24 @@ public class RSocketController {
     @MessageMapping("camel-virtual/{client}/{filter}")
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute(client));
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute(client, "cancel")).doOnTerminate(() -> terminateRoute(client, "terminate")).doOnError(error -> terminateRoute(client, "error"));
     }
 
     @MessageMapping("replay/{client}/{filter}")
     public Publisher<String> replay(@DestinationVariable String client, @DestinationVariable String filter, @Payload String jsonQuery) throws Exception {
-        terminateRoute("replay_" + client);
+        terminateRoute("replay_" + client, "route_start");
         camelContext.addRoutes(new ReplayRouteBuilder(camelContext, client, jsonQuery));
-        return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client)).doOnComplete(() -> terminateRoute("replay_" + client)).doOnComplete(
+        return Flux.from(camel.fromStream("replay_" + client, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute("replay_" + client, "cancel")).doOnComplete(() -> terminateRoute("replay_" + client, "complete")).doOnComplete(
                 () -> {
                     System.out.println("Done");
                 }
         );
     }
 
-    private void terminateRoute(String routeId) {
+    private void terminateRoute(String routeId, String event) {
         try {
             camelContext.getRoute(routeId).getConsumer().close();
-            System.out.println(" Route Removed >>>> " + camelContext.removeRoute(routeId));
+            log.info("Route Removed - " + camelContext.removeRoute(routeId) + " - " + event, kv("appId", routeId), kv("event", event));
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -64,25 +64,26 @@ public class RSocketConfig {
                 .build();
     }
 
-//    Mono<CloseableChannel> closeableChannel() {
-//        return
-//                RSocketServer.create()
-//                        .resume(resume())
-//                        .acceptor(rsocketMessageHandler().responder())
-//                        .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
-//                        .cache();
-//    }
-//
-//    @Bean
-//    public NettyRSocketServer create(SocketAcceptor socketAcceptor) {
-//        Mono<CloseableChannel> starter = closeableChannel();
-//        return new NettyRSocketServer(starter, Duration.ofMillis(100));
-//    }
+    Mono<CloseableChannel> closeableChannel() {
+        return
+                RSocketServer.create()
+                        .resume(resume())
+                        .acceptor(rsocketMessageHandler().responder())
+                        .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
+                        .cache();
+    }
+
+    @Bean
+    public NettyRSocketServer create() {
+        Mono<CloseableChannel> starter = closeableChannel();
+        return new NettyRSocketServer(starter, Duration.ofMillis(100));
+    }
 
     @Bean
     RSocketServerCustomizer rSocketServerCustomizer() {
         return rSocketServer -> rSocketServer.resume(resume());
     }
+
     @Bean
     RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
                                               ObjectProvider<ServerRSocketFactoryProcessor> processors) {
@@ -95,4 +96,5 @@ public class RSocketConfig {
         map.from(properties.getServer().getPort()).to(factory::setPort);
         return factory;
     }
+    
 }
