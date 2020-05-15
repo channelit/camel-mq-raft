@@ -39,7 +39,6 @@ public class AmqRoute extends RouteBuilder {
                 .process(exchange -> log.info(exchange.getMessage().getBody().toString()));
 
         fromF("jms:queue:%s", inTopic)
-                .log(LoggingLevel.DEBUG, log, "in message")
                 .toF("jms:topic:VirtualTopic.%s", outTopic)
                 .process(exchange -> {
                     String jsonString = exchange.getMessage().getBody().toString();
