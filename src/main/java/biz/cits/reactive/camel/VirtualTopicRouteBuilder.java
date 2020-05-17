@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Route;
 import org.apache.camel.builder.RouteBuilder;
 
 public class VirtualTopicRouteBuilder extends RouteBuilder {
@@ -23,7 +24,7 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
-        if (context.hasEndpoint(String.format("reactive-streams:%s_%s", client, outTopic)) == null) {
+        if (context.getRoute(client) == null) {
             fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
                     .process(exchange -> {
                         String jsonString = exchange.getIn().getBody().toString();
@@ -38,7 +39,9 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                     })
                     .toF("reactive-streams:%s_%s", client, outTopic).setId(client);
         } else {
-            context.getRoute(client).getConsumer().start();
+            Route route = context.getRoute(client);
+            route.getEndpoint().start();
+            route.getConsumer().start();
         }
     }
 }

@@ -5,6 +5,7 @@ app:
   in-topic: in_topic
   out-topic: out_topic
   table-name: messages
+  jms-ttl-millis: 5000
 
 postgres:
   server: localhost
@@ -17,8 +18,8 @@ spring:
   activemq:
     broker-url: tcp://localhost:61616
     pool:
-      enabled: false
-      max-connections: 100
+      enabled: true
+      max-connections: 50
   rsocket:
     server:
       port: 7000

@@ -12,11 +12,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.apache.camel.CamelContext;
+import org.apache.camel.Route;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
@@ -31,6 +32,8 @@ import static net.logstash.logback.argument.StructuredArguments.kv;
 
 import javax.jms.TextMessage;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 @Controller
 public class RSocketController {
@@ -51,11 +54,11 @@ public class RSocketController {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext) {
+    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext, @Value("${app.jms-ttl-millis}") long ttl) {
         this.inTopic = inTopic;
         this.outTopic = outTopic;
         this.jmsTemplate = jmsTemplate;
-//        jmsTemplate.setPubSubDomain(true);
+        jmsTemplate.setTimeToLive(ttl);
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
@@ -64,7 +67,6 @@ public class RSocketController {
     @MessageMapping("")
     public Publisher<String> routeMessage(@Payload String message, RSocketRequester requester) throws Exception {
         log.info("FILTER:{}", message);
-        System.out.println(message);
         String filter, route, client, data;
         try {
             JsonNode node = mapper.readTree(message);
@@ -126,7 +128,11 @@ public class RSocketController {
     @MessageMapping("camel-virtual/{client}/{filter}")
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter)).doOnCancel(() -> terminateRoute(client, "cancel")).doOnTerminate(() -> terminateRoute(client, "terminate")).doOnError(error -> terminateRoute(client, "error"));
+        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
+                .log(log.getName())
+                .doOnCancel(() -> terminateRoute(client, "cancel"))
+                .doOnTerminate(() -> terminateRoute(client, "terminate"))
+                .doOnError(error -> terminateRoute(client, "error"));
     }
 
     @MessageMapping("replay/{client}/{filter}")
@@ -142,8 +148,10 @@ public class RSocketController {
 
     private void terminateRoute(String routeId, String event) {
         try {
-            camelContext.getRoute(routeId).getConsumer().close();
-            log.info("Route Removed - " + camelContext.removeRoute(routeId) + " - " + event, kv("appId", routeId), kv("event", event));
+            Route route = camelContext.getRoute(routeId);
+            route.getConsumer().stop();
+            route.getEndpoint().stop();
+            log.info("Route stopped {} {}", kv("appId", routeId), kv("event", event));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -151,8 +159,7 @@ public class RSocketController {
 
     @MessageMapping("post/{client}")
     public Publisher<String> postMessage(@Payload String message, @DestinationVariable String client) {
-        System.out.println(message);
-        log.debug(message);
+//        log.debug("received {}", kv("received-message", message));
         return Flux.just(generateMessage(message, client));
     }
 
@@ -165,6 +172,7 @@ public class RSocketController {
             jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
                 TextMessage textMessage = messageCreator.createTextMessage(message);
                 textMessage.setStringProperty("client", client);
+                textMessage.setJMSExpiration(5000);
                 textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
                 log.info("{},{}", kv("client", client), kv("messageId", textMessage.getJMSCorrelationID()));
                 return textMessage;
@@ -189,7 +197,9 @@ public class RSocketController {
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        return jsonNode.get("client").asText().startsWith(filter);
+        String[] filters = filter.split(",");
+        String client = jsonNode.get("client").asText();
+        return Arrays.asList(filters).contains(client);
     }
 
 }

@@ -1,24 +1,18 @@
 package biz.cits.reactive.rsocket;
 
-import io.rsocket.RSocketFactory;
-import io.rsocket.SocketAcceptor;
 import io.rsocket.core.RSocketServer;
 import io.rsocket.core.Resume;
 import io.rsocket.resume.InMemoryResumableFramesStore;
-import io.rsocket.transport.ServerTransport;
 import io.rsocket.transport.netty.server.CloseableChannel;
 import io.rsocket.transport.netty.server.TcpServerTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.rsocket.RSocketProperties;
 import org.springframework.boot.context.properties.PropertyMapper;
-import org.springframework.boot.rsocket.netty.NettyRSocketServer;
 import org.springframework.boot.rsocket.netty.NettyRSocketServerFactory;
 import org.springframework.boot.rsocket.server.RSocketServerCustomizer;
 import org.springframework.boot.rsocket.server.RSocketServerFactory;
-import org.springframework.boot.rsocket.server.ServerRSocketFactoryProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorResourceFactory;
@@ -30,7 +24,6 @@ import org.springframework.web.util.pattern.PathPatternRouteMatcher;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.stream.Collectors;
 
 @Configuration
 public class RSocketConfig {
@@ -72,12 +65,12 @@ public class RSocketConfig {
                         .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
                         .cache();
     }
-
-    @Bean
-    public NettyRSocketServer create() {
-        Mono<CloseableChannel> starter = closeableChannel();
-        return new NettyRSocketServer(starter, Duration.ofMillis(100));
-    }
+//
+//    @Bean
+//    public NettyRSocketServer create() {
+//        Mono<CloseableChannel> starter = closeableChannel();
+//        return new NettyRSocketServer(starter, Duration.ofMillis(100));
+//    }
 
     @Bean
     RSocketServerCustomizer rSocketServerCustomizer() {
@@ -85,8 +78,7 @@ public class RSocketConfig {
     }
 
     @Bean
-    RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory,
-                                              ObjectProvider<ServerRSocketFactoryProcessor> processors) {
+    RSocketServerFactory rSocketServerFactory(RSocketProperties properties, ReactorResourceFactory reactorResourceFactory) {
         NettyRSocketServerFactory factory = new NettyRSocketServerFactory();
         factory.setResourceFactory(reactorResourceFactory);
         factory.setTransport(properties.getServer().getTransport());
