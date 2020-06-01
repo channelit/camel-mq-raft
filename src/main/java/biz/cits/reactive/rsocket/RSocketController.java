@@ -129,7 +129,7 @@ public class RSocketController {
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
         return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
-                .log(log.getName())
+                .delayElements(Duration.ofMillis(100))
                 .doOnCancel(() -> terminateRoute(client, "cancel"))
                 .doOnTerminate(() -> terminateRoute(client, "terminate"))
                 .doOnError(error -> terminateRoute(client, "error"));

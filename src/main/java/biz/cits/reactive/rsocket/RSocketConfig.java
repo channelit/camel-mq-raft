@@ -1,10 +1,7 @@
 package biz.cits.reactive.rsocket;
 
-import io.rsocket.core.RSocketServer;
 import io.rsocket.core.Resume;
 import io.rsocket.resume.InMemoryResumableFramesStore;
-import io.rsocket.transport.netty.server.CloseableChannel;
-import io.rsocket.transport.netty.server.TcpServerTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +18,6 @@ import org.springframework.http.codec.cbor.Jackson2CborEncoder;
 import org.springframework.messaging.rsocket.RSocketStrategies;
 import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler;
 import org.springframework.web.util.pattern.PathPatternRouteMatcher;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 
@@ -57,14 +53,14 @@ public class RSocketConfig {
                 .build();
     }
 
-    Mono<CloseableChannel> closeableChannel() {
-        return
-                RSocketServer.create()
-                        .resume(resume())
-                        .acceptor(rsocketMessageHandler().responder())
-                        .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
-                        .cache();
-    }
+//    Mono<CloseableChannel> closeableChannel() {
+//        return
+//                RSocketServer.create()
+//                        .resume(resume())
+//                        .acceptor(rsocketMessageHandler().responder())
+//                        .bind(TcpServerTransport.create(properties.getServer().getAddress().getHostName(), properties.getServer().getPort()))
+//                        .cache();
+//    }
 //
 //    @Bean
 //    public NettyRSocketServer create() {

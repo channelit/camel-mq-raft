@@ -17,9 +17,15 @@ postgres:
 spring:
   activemq:
     broker-url: tcp://localhost:61616
-    pool:
-      enabled: true
-      max-connections: 50
+
+    jms:
+      template:
+        time-to-live: ${MESSAGE_TTL:3000}
+
+#    pool:
+#      enabled: true
+#      max-connections: 50
+      
   rsocket:
     server:
       port: 7000

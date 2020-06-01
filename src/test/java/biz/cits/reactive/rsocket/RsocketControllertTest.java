@@ -19,11 +19,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.rsocket.RSocketRequester;
-import org.springframework.messaging.rsocket.RSocketStrategies;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.util.MimeTypeUtils;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 @SpringBootTest
@@ -42,7 +40,7 @@ public class RsocketControllertTest {
     @Test
     @DisplayName("JSON Parser Error Test")
     public void JsonErrorTest() throws Exception {
-        Mono<String> response = rSocketRequester.route("post/me").data("Invalid JSON").retrieveMono(String.class).map(this::parseJson);
+        Flux<String> response = rSocketRequester.route("post/me").data("Invalid JSON").retrieveFlux(String.class).map(this::parseJson);
         StepVerifier.create(response)
                 .expectNext("True")
                 .expectComplete()
@@ -77,12 +75,8 @@ public class RsocketControllertTest {
 
         @Bean
         @Lazy
-        RSocketRequester rSocketRequester(RSocketStrategies strategies) {
+        RSocketRequester rSocketRequester() {
             return RSocketRequester.builder()
-                    .rsocketFactory(factory -> factory
-                            .dataMimeType(MimeTypeUtils.ALL_VALUE)
-                            .frameDecoder(PayloadDecoder.ZERO_COPY))
-                    .rsocketStrategies(strategies)
                     .connect(TcpClientTransport.create("localhost", 7001))
                     .retry().block();
         }
