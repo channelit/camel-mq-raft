@@ -17,7 +17,6 @@ import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsServi
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
 import org.springframework.jms.core.JmsTemplate;
@@ -28,12 +27,11 @@ import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 
-import static net.logstash.logback.argument.StructuredArguments.kv;
-
 import javax.jms.TextMessage;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.stream.IntStream;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Controller
 public class RSocketController {
@@ -82,6 +80,12 @@ public class RSocketController {
             return Flux.just(response.asText());
         }
         switch (route) {
+            case "inspect":
+                inspectRoute(client);
+                return Flux.just("ok");
+            case "stop":
+                terminateRoute(client, "stop");
+                return Flux.just("ok");
             case "subscribe":
                 return getCamelVirtual(client, filter);
             case "post":
@@ -129,7 +133,7 @@ public class RSocketController {
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
         return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
-                .delayElements(Duration.ofMillis(100))
+                .delayElements(Duration.ofMillis(300))
                 .doOnCancel(() -> terminateRoute(client, "cancel"))
                 .doOnTerminate(() -> terminateRoute(client, "terminate"))
                 .doOnError(error -> terminateRoute(client, "error"));
@@ -144,6 +148,17 @@ public class RSocketController {
                     System.out.println("Done");
                 }
         );
+    }
+
+    private void inspectRoute(String routeId) {
+        if (camelContext.getRoute(routeId) != null) {
+            Route route = camelContext.getRoute(routeId);
+            route.getConsumer().start();
+            route.getEndpoint().start();
+            log.info("Route started {} {}", kv("appId", routeId), kv("event", "inspect"));
+        } else {
+            log.info("Route started {} {}", kv("appId", routeId), kv("event", "invalid"));
+        }
     }
 
     private void terminateRoute(String routeId, String event) {

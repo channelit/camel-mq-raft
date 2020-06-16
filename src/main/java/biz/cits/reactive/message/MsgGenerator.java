@@ -13,10 +13,10 @@ public class MsgGenerator {
     static AtomicInteger ctr = new AtomicInteger(0);
 
     private static String getClient() {
-        if (ctr.get() == clients.length - 1) {
+        if (ctr.get() > clients.length - 1) {
             ctr.set(0);
         } else {
-            ctr.set(ctr.addAndGet(1));
+            ctr.addAndGet(1);
         }
         return clients[ctr.get()];
     }

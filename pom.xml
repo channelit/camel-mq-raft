@@ -14,7 +14,7 @@
     </parent>
     <properties>
         <camel.version>3.3.0</camel.version>
-        <rsocket.version>1.0.0-RC7</rsocket.version>
+        <rsocket.version>1.0.0</rsocket.version>
     </properties>
     <dependencies>
         <dependency>
