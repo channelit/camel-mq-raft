@@ -5,8 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Route;
+import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
 
 public class VirtualTopicRouteBuilder extends RouteBuilder {
@@ -24,6 +23,13 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
+
+        onException(RuntimeCamelException.class).process(exchange -> {
+            System.out.println("handling ex");
+            exchange.getContext().getRoute(client).getConsumer().stop();
+        }).log("Received body ").handled(true);
+
+
         if (context.getRoute(client) == null) {
             fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
                     .process(exchange -> {
