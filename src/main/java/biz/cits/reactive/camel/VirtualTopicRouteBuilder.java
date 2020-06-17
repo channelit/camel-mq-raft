@@ -24,10 +24,10 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
 
-        onException(RuntimeCamelException.class).process(exchange -> {
-            System.out.println("handling ex");
-            exchange.getContext().getRoute(client).getConsumer().stop();
-        }).log("Received body ").handled(true);
+//        onException(RuntimeCamelException.class).process(exchange -> {
+//            System.out.println("handling ex");
+//            exchange.getContext().getRoute(client).getConsumer().stop();
+//        }).log("Received body ").handled(true);
 
 
         if (context.getRoute(client) == null) {

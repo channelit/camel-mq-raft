@@ -32,9 +32,10 @@ public class RSocketConfig {
     @Bean
     Resume resume() {
         return new Resume()
-                .sessionDuration(Duration.ofSeconds(1))
-                .cleanupStoreOnKeepAlive()
-                .storeFactory(t -> new InMemoryResumableFramesStore("server", 500_000));
+                .streamTimeout(Duration.ofSeconds(5000))
+                .sessionDuration(Duration.ofSeconds(5000))
+                .sessionDuration(Duration.ofSeconds(1000))
+                .storeFactory(t -> new InMemoryResumableFramesStore("server", 500_000_000));
     }
 
     @Bean
