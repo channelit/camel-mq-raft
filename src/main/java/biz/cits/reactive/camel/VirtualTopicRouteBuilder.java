@@ -24,14 +24,9 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
 
-//        onException(RuntimeCamelException.class).process(exchange -> {
-//            System.out.println("handling ex");
-//            exchange.getContext().getRoute(client).getConsumer().stop();
-//        }).log("Received body ").handled(true);
-
-
         if (context.getRoute(client) == null) {
             fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
+                    .routeId(client)
                     .process(exchange -> {
                         String jsonString = exchange.getIn().getBody().toString();
                         JsonNode jsonNode = null;
@@ -43,7 +38,15 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                         exchange.getMessage().setBody(jsonNode);
                     })
-                    .toF("reactive-streams:%s_%s", client, outTopic).setId(client);
+                    .doTry()
+                        .toF("reactive-streams:%s_%s", client, outTopic)
+                    .doCatch(IllegalStateException.class)
+                        .process(exchange -> {
+                            exchange.getContext().getRoute(client).getEndpoint().stop();
+                            exchange.getContext().getRoute(client).getConsumer().stop();
+                            log.info("Exit Route " + client);
+                        })
+                    .endDoTry();
         } else {
             Route route = context.getRoute(client);
             route.getEndpoint().start();
