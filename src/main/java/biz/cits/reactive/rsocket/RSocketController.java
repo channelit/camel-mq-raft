@@ -64,7 +64,7 @@ public class RSocketController {
 
     @MessageMapping("")
     public Publisher<String> routeMessage(@Payload String message, RSocketRequester requester) throws Exception {
-        log.info("FILTER:{}", message);
+        log.info("FILTER:{}");
         String filter, route, client, data;
         try {
             JsonNode node = mapper.readTree(message);
@@ -81,8 +81,7 @@ public class RSocketController {
         }
         switch (route) {
             case "inspect":
-                inspectRoute(client);
-                return Flux.just("ok");
+                return inspectRoute(client);
             case "stop":
                 terminateRoute(client, "stop");
                 return Flux.just("ok");
@@ -133,7 +132,6 @@ public class RSocketController {
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
         return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
-                .delayElements(Duration.ofMillis(300))
                 .doOnCancel(() -> terminateRoute(client, "cancel"))
                 .doOnTerminate(() -> terminateRoute(client, "terminate"))
                 .doOnError(error -> terminateRoute(client, "error"));
@@ -150,15 +148,19 @@ public class RSocketController {
         );
     }
 
-    private void inspectRoute(String routeId) {
+    private Publisher<String> inspectRoute(String routeId) {
+        String out = "";
         if (camelContext.getRoute(routeId) != null) {
             Route route = camelContext.getRoute(routeId);
             route.getConsumer().start();
             route.getEndpoint().start();
             log.info("Route started {} {}", kv("appId", routeId), kv("event", "inspect"));
+            out = "ok";
         } else {
             log.info("Route started {} {}", kv("appId", routeId), kv("event", "invalid"));
+            out = "down";
         }
+        return Flux.just(out);
     }
 
     private void terminateRoute(String routeId, String event) {
@@ -213,8 +215,8 @@ public class RSocketController {
             e.printStackTrace();
         }
         String[] filters = filter.split(",");
-        String client = jsonNode.get("client").asText();
-        return Arrays.asList(filters).contains(client);
+//        String client = jsonNode.get("client").asText();
+        return true;
     }
 
 }

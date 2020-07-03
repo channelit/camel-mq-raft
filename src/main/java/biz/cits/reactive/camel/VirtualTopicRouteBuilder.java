@@ -38,15 +38,17 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         exchange.getMessage().setMessageId(jsonNode.get("id").asText());
                         exchange.getMessage().setBody(jsonNode);
                     })
-                    .doTry()
-                        .toF("reactive-streams:%s_%s", client, outTopic)
-                    .doCatch(IllegalStateException.class)
-                        .process(exchange -> {
-                            exchange.getContext().getRoute(client).getEndpoint().stop();
-                            exchange.getContext().getRoute(client).getConsumer().stop();
-                            log.info("Exit Route " + client);
-                        })
-                    .endDoTry();
+//                    .doTry()
+                        .toF("reactive-streams:%s_%s", client, outTopic).onException(Exception.class).stop();
+
+//                    .doCatch(IllegalStateException.class)
+//                        .process(exchange -> {
+//                            exchange.getFromEndpoint().stop();
+//                            exchange.getContext().getRoute(client).getEndpoint().stop();
+//                            exchange.getContext().getRoute(client).getConsumer().stop();
+//                            log.info("Exit Route " + client);
+//                        })
+//                    .end();
         } else {
             Route route = context.getRoute(client);
             route.getEndpoint().start();
