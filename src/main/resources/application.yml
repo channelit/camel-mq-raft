@@ -22,9 +22,9 @@ spring:
       template:
         time-to-live: ${MESSAGE_TTL:3000}
 
-#    pool:
-#      enabled: true
-#      max-connections: 50
+    pool:
+      enabled: true
+      max-connections: 50
       
   rsocket:
     server:
@@ -36,6 +36,11 @@ spring:
 camel:
   springboot:
     name: "reactive"
+  component:
+    jms:
+      transacted: true
+      acknowledgement-mode-name: "SESSION_TRANSACTED"
+      lazy-create-transaction-manager: false
 
 management:
   server:

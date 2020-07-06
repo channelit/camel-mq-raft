@@ -35,9 +35,6 @@ public class AmqRoute extends RouteBuilder {
         inflight.setMaxInflightExchanges(2000);
         inflight.setResumePercentOfMax(25);
 
-        onException(Exception.class)
-                .process(exchange -> log.info(exchange.getMessage().getBody().toString()));
-
         fromF("jms:queue:%s", inTopic)
                 .toF("jms:topic:VirtualTopic.%s", outTopic)
                 .process(exchange -> {

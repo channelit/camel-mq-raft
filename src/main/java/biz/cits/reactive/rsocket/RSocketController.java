@@ -165,9 +165,9 @@ public class RSocketController {
 
     private void terminateRoute(String routeId, String event) {
         try {
-            Route route = camelContext.getRoute(routeId);
-            route.getConsumer().stop();
-            route.getEndpoint().stop();
+//            Route route = camelContext.getRoute(routeId);
+//            route.getConsumer().stop();
+//            route.getEndpoint().stop();
             log.info("Route stopped {} {}", kv("appId", routeId), kv("event", event));
         } catch (Exception e) {
             e.printStackTrace();
