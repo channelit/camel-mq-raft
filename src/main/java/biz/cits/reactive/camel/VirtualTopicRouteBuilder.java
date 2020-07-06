@@ -25,9 +25,9 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     public void configure() {
 
         if (context.getRoute(client) == null) {
-            fromF("jms:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
+            fromF("jms:queue:Consumer.%s.VirtualTopic.%s?transacted=true", client, outTopic)
                     .routeId(client)
-                    .onException(IllegalStateException.class).rollback().end()
+                    .onException(IllegalStateException.class).markRollbackOnly().end()
                     .transacted()
                     .process(exchange -> {
                         String jsonString = exchange.getIn().getBody().toString();
