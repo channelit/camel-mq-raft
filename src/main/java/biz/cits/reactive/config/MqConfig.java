@@ -1,11 +1,6 @@
 package biz.cits.reactive.config;
 
-import org.apache.camel.component.jms.JmsComponent;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jms.connection.JmsTransactionManager;
-
-import javax.jms.ConnectionFactory;
 
 @Configuration
 public class MqConfig {
@@ -13,6 +8,7 @@ public class MqConfig {
 //    public JmsTransactionManager jmsTransactionManager(final ConnectionFactory connectionFactory) {
 //        JmsTransactionManager jmsTransactionManager = new JmsTransactionManager();
 //        jmsTransactionManager.setConnectionFactory(connectionFactory);
+//        jmsTransactionManager.
 //        return jmsTransactionManager;
 //    }
 //

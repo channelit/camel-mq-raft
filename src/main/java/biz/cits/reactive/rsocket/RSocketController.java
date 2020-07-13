@@ -10,9 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.activemq.command.ActiveMQQueue;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Route;
+import org.apache.camel.*;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
@@ -26,10 +24,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
-
-import javax.jms.TextMessage;
-import java.time.Duration;
-import java.util.Arrays;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
@@ -50,9 +44,12 @@ public class RSocketController {
 
     private final CamelContext camelContext;
 
+//    @Produce(uri="direct:in-route")
+    private ProducerTemplate producer;
+
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext, @Value("${app.jms-ttl-millis}") long ttl) {
+    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext, @Value("${app.jms-ttl-millis}") long ttl, ProducerTemplate producer) {
         this.inTopic = inTopic;
         this.outTopic = outTopic;
         this.jmsTemplate = jmsTemplate;
@@ -60,11 +57,12 @@ public class RSocketController {
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
+        producer = camelContext.createProducerTemplate();
+        this.producer = producer;
     }
 
     @MessageMapping("")
     public Publisher<String> routeMessage(@Payload String message, RSocketRequester requester) throws Exception {
-        log.info("FILTER:{}");
         String filter, route, client, data;
         try {
             JsonNode node = mapper.readTree(message);
@@ -86,7 +84,7 @@ public class RSocketController {
                 terminateRoute(client, "stop");
                 return Flux.just("ok");
             case "subscribe":
-                return getCamelVirtual(client, filter);
+                return getCamelVirtualDirect(client, filter);
             case "post":
                 return postMessage(data, client);
             case "replay":
@@ -125,7 +123,7 @@ public class RSocketController {
 
     @MessageMapping("camel-virtual-direct/{client}/{filter}")
     public Publisher<String> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic, String.class)).filter(message -> applyFilter(message, filter)).delayElements(Duration.ofMillis(100));
+        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic + "?clientId=" + outTopic + "&transacted=true", String.class)).onErrorStop().filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("camel-virtual/{client}/{filter}")
@@ -134,7 +132,7 @@ public class RSocketController {
         return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
                 .doOnCancel(() -> terminateRoute(client, "cancel"))
                 .doOnTerminate(() -> terminateRoute(client, "terminate"))
-                .doOnError(error -> terminateRoute(client, "error"));
+                .doOnError(error -> terminateRoute(client, "error")).log();
     }
 
     @MessageMapping("replay/{client}/{filter}")
@@ -186,14 +184,17 @@ public class RSocketController {
         JsonNode jsonNode;
         try {
             jsonNode = mapper.readTree(message);
-            jmsTemplate.send(new ActiveMQQueue(inTopic), messageCreator -> {
-                TextMessage textMessage = messageCreator.createTextMessage(message);
-                textMessage.setStringProperty("client", client);
-                textMessage.setJMSExpiration(5000);
-                textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
-                log.info("{},{}", kv("client", client), kv("messageId", textMessage.getJMSCorrelationID()));
-                return textMessage;
-            });
+            producer.sendBody("direct:in-route" , message);
+//            jmsTemplate.send(new ActiveMQTopic("VirtualTopic." + outTopic), messageCreator -> {
+//                TextMessage textMessage = messageCreator.createTextMessage(message);
+//                textMessage.setStringProperty("client", client);
+//                textMessage.setJMSExpiration(5000);
+//                textMessage.setJMSCorrelationID(jsonNode.get("id").asText());
+//                log.info("{},{}", kv("client", client), kv("messageId", textMessage.getJMSCorrelationID()));
+//                return textMessage;
+//            });
+//            String insertQuery = "INSERT INTO messages values ( '" + jsonNode.get("id").asText() + "','" + mapper.writeValueAsString(jsonNode) + "')";
+//            camel.to("jdbc:datasource").apply(insertQuery);
             response.put("message", "ok");
         } catch (JmsException | JsonProcessingException e) {
             e.printStackTrace();
@@ -204,7 +205,7 @@ public class RSocketController {
 
     @MessageMapping("posts/{client}")
     public Publisher<String> postMessage(@Payload Flux<String> messages, @DestinationVariable String client) {
-        return messages.delayElements(Duration.ofMillis(100)).map(message -> generateMessage(message, client));
+        return messages.map(message -> generateMessage(message, client));
     }
 
     private boolean applyFilter(String message, String filter) {

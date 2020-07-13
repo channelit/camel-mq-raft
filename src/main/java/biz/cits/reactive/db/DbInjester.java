@@ -11,7 +11,7 @@ public class DbInjester implements Processor {
 
     @Override
     public void process(Exchange exchange) throws Exception {
-        String input = (String) exchange.getIn().getBody();
+        String input = (String) exchange.getMessage().getBody();
         log.debug("Input to be persisted : {}", input);
         String insertQuery = "INSERT INTO messages values ( '" + exchange.getMessage().getMessageId() + "','" + input + "')";
         log.debug("Insert Query is : {}", insertQuery);

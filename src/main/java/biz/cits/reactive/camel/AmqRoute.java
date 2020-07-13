@@ -31,21 +31,12 @@ public class AmqRoute extends RouteBuilder {
 
     @Override
     public void configure() {
-        ThrottlingInflightRoutePolicy inflight = new ThrottlingInflightRoutePolicy();
-        inflight.setMaxInflightExchanges(2000);
-        inflight.setResumePercentOfMax(25);
-
-        fromF("jms:queue:%s", inTopic)
-                .toF("jms:topic:VirtualTopic.%s", outTopic)
+        fromF("direct:in-route")
+                .to("jms:topic:VirtualTopic." + outTopic + "?disableReplyTo=true")
                 .process(exchange -> {
-                    String jsonString = exchange.getMessage().getBody().toString();
-                    JsonNode jsonNode = mapper.readTree(jsonString);
+                    JsonNode jsonNode = mapper.readTree(exchange.getMessage().getBody().toString());
                     exchange.getMessage().setMessageId(jsonNode.get("id").asText());
-                    exchange.getMessage().setBody(jsonNode);
-                })
-                .doTry().to("reactive-streams:message_out_stream").doCatch(IllegalStateException.class).endDoTry()
-                .process(exchange -> {
-                    exchange.getMessage().setBody(mapper.writeValueAsString(exchange.getMessage().getBody()));
+                    exchange.getMessage().setBody(mapper.writeValueAsString(jsonNode));
                 })
                 .process(new DbInjester())
                 .to("jdbc:datasource");

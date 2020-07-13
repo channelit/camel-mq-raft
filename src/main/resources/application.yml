@@ -37,10 +37,10 @@ camel:
   springboot:
     name: "reactive"
   component:
-    jms:
-      transacted: true
-      acknowledgement-mode-name: "SESSION_TRANSACTED"
-      lazy-create-transaction-manager: false
+#    jms:
+#      transacted: true
+#      acknowledgement-mode-name: "SESSION_TRANSACTED"
+#      lazy-create-transaction-manager: false
 
 management:
   server:

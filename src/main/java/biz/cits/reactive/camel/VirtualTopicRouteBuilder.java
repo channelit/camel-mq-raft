@@ -27,7 +27,7 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     public void configure() {
 
         if (context.getRoute(client) == null) {
-            fromF("jms:queue:Consumer.%s.VirtualTopic.%s?transacted=true", client, outTopic)
+            fromF("jms:queue:Consumer.%s.VirtualTopic.%s?clientId=%s&transacted=true", client, outTopic, client)
                     .routeId(client)
 //                    .onException(IllegalStateException.class).markRollbackOnly().end()
 //                    .transacted()
@@ -47,8 +47,8 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         .toF("reactive-streams:%s_%s", client, outTopic)
                     .doCatch(IllegalStateException.class)
                         .process(exchange -> {
-//                            exchange.getContext().getRoute(client).getEndpoint().stop();
-//                            exchange.getContext().getRoute(client).getConsumer().stop();
+                            exchange.getContext().getRoute(client).getEndpoint().stop();
+                            exchange.getContext().getRoute(client).getConsumer().stop();
                             log.info("Exit Route " + client + " " + context.getRoutes().toString());
                             throw new IllegalStateException();
                         })
