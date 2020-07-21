@@ -10,20 +10,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.camel.*;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
+import org.apache.camel.Route;
 import org.apache.camel.component.reactive.streams.api.CamelReactiveStreamsService;
 import org.reactivestreams.Publisher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jms.JmsException;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
@@ -35,9 +37,6 @@ public class RSocketController {
     private final String inTopic;
 
     private final String outTopic;
-
-    private JmsTemplate jmsTemplate;
-
     private final ClientMessageRepo messageRepo;
 
     private final CamelReactiveStreamsService camel;
@@ -49,11 +48,9 @@ public class RSocketController {
 
     private ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, JmsTemplate jmsTemplate, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext, @Value("${app.jms-ttl-millis}") long ttl, ProducerTemplate producer) {
+    public RSocketController(@Value("${app.in-topic}") String inTopic, @Value("${app.out-topic}") String outTopic, ClientMessageRepo clientMessageRepo, CamelReactiveStreamsService camel, CamelContext camelContext, @Value("${app.jms-ttl-millis}") long ttl, ProducerTemplate producer) {
         this.inTopic = inTopic;
         this.outTopic = outTopic;
-        this.jmsTemplate = jmsTemplate;
-        jmsTemplate.setTimeToLive(ttl);
         this.messageRepo = clientMessageRepo;
         this.camel = camel;
         this.camelContext = camelContext;
@@ -79,7 +76,7 @@ public class RSocketController {
         }
         switch (route) {
             case "inspect":
-                return inspectRoute(client);
+                return Mono.just(inspectRoute(client));
             case "stop":
                 terminateRoute(client, "stop");
                 return Flux.just("ok");
@@ -94,10 +91,10 @@ public class RSocketController {
         }
     }
 
-    @MessageMapping("messages/{filter}")
-    public Flux<String> getMessages(@DestinationVariable String filter) {
-        log.info("FILTER:{}", filter);
-        return messageRepo.getMessages(filter);
+    @MessageMapping("inspect/{client}")
+    public Mono<String> getMessages(@DestinationVariable String client) {
+        log.info("FILTER:{}", client);
+        return Mono.just(inspectRoute(client));
     }
 
     @MessageMapping("camel/{filter}")
@@ -118,12 +115,12 @@ public class RSocketController {
     //TODO: Works with only single connection. Use Virtual instead.
     @MessageMapping("camel-durable-direct/{client}/{filter}")
     public Publisher<String> getCamelDurableDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        return Flux.from(camel.from("jms:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, String.class));
+        return Flux.from(camel.from("activemq:topic:message-out-topic?clientId=" + client + "&cacheLevelName=CACHE_CONSUMER&subscriptionDurable=true&durableSubscriptionName=" + client, String.class));
     }
 
     @MessageMapping("camel-virtual-direct/{client}/{filter}")
     public Publisher<String> getCamelVirtualDirect(@DestinationVariable String client, @DestinationVariable String filter) {
-        return Flux.from(camel.from("jms:queue:Consumer." + client + ".VirtualTopic." + outTopic + "?clientId=" + outTopic + "&transacted=true", String.class)).onErrorStop().filter(message -> applyFilter(message, filter));
+        return Flux.from(camel.from("activemq:queue:Consumer." + client + ".VirtualTopic." + outTopic + "?clientId=" + outTopic + "&transacted=true", String.class)).onErrorStop().filter(message -> applyFilter(message, filter));
     }
 
     @MessageMapping("camel-virtual/{client}/{filter}")
@@ -146,7 +143,7 @@ public class RSocketController {
         );
     }
 
-    private Publisher<String> inspectRoute(String routeId) {
+    private String inspectRoute(String routeId) {
         String out = "";
         if (camelContext.getRoute(routeId) != null) {
             Route route = camelContext.getRoute(routeId);
@@ -158,7 +155,7 @@ public class RSocketController {
             log.info("Route started {} {}", kv("appId", routeId), kv("event", "invalid"));
             out = "down";
         }
-        return Flux.just(out);
+        return out;
     }
 
     private void terminateRoute(String routeId, String event) {
@@ -173,9 +170,9 @@ public class RSocketController {
     }
 
     @MessageMapping("post/{client}")
-    public Publisher<String> postMessage(@Payload String message, @DestinationVariable String client) {
+    public Mono<String> postMessage(@Payload String message, @DestinationVariable String client) {
 //        log.debug("received {}", kv("received-message", message));
-        return Flux.just(generateMessage(message, client));
+        return Mono.just(generateMessage(message, client)).log();
     }
 
 

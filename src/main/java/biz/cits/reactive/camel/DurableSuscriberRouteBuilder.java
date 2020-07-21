@@ -21,8 +21,8 @@ public class DurableSuscriberRouteBuilder extends RouteBuilder {
 
     @Override
     public void configure() {
-        from("jms:topic:message-in-topic")
-                .to("jms:topic:" + client + "?clientId=" + client + "&durableSubscriptionName=" + client)
+        from("activemq:topic:message-in-topic")
+                .to("activemq:topic:" + client + "?clientId=" + client + "&durableSubscriptionName=" + client)
                 .process(exchange -> {
                     String jsonString = exchange.getIn().getBody().toString();
                     JsonNode jsonNode = null;

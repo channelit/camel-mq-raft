@@ -15,17 +15,6 @@ postgres:
   db: postgres
 
 spring:
-  activemq:
-    broker-url: tcp://localhost:61616
-
-    jms:
-      template:
-        time-to-live: ${MESSAGE_TTL:3000}
-
-    pool:
-      enabled: true
-      max-connections: 50
-      
   rsocket:
     server:
       port: 7000
@@ -37,6 +26,12 @@ camel:
   springboot:
     name: "reactive"
   component:
+    reactive-streams:
+      thread-pool-max-size: 5
+    activemq:
+      broker-url: "tcp://localhost:61616"
+      connection-factory: CachingConnectionFactory
+
 #    jms:
 #      transacted: true
 #      acknowledgement-mode-name: "SESSION_TRANSACTED"

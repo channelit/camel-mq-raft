@@ -32,13 +32,13 @@ public class AmqRoute extends RouteBuilder {
     @Override
     public void configure() {
         fromF("direct:in-route")
-                .to("jms:topic:VirtualTopic." + outTopic + "?disableReplyTo=true")
+                .to("activemq:topic:VirtualTopic." + outTopic + "")
                 .process(exchange -> {
                     JsonNode jsonNode = mapper.readTree(exchange.getMessage().getBody().toString());
-                    exchange.getMessage().setMessageId(jsonNode.get("id").asText());
-                    exchange.getMessage().setBody(mapper.writeValueAsString(jsonNode));
+                    log.info("message ---->" + jsonNode);
+                    String insertQuery = "INSERT INTO messages values ( '" + jsonNode.get("id").asText() + "','" + mapper.writeValueAsString(jsonNode) + "')";
+                    exchange.getIn().setBody(insertQuery);
                 })
-                .process(new DbInjester())
                 .to("jdbc:datasource");
     }
 }
