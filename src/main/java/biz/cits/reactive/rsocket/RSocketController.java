@@ -27,6 +27,8 @@ import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Arrays;
+
 import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Controller
@@ -123,10 +125,10 @@ public class RSocketController {
         return Flux.from(camel.from("activemq:queue:Consumer." + client + ".VirtualTopic." + outTopic + "?clientId=" + outTopic + "&transacted=true", String.class)).onErrorStop().filter(message -> applyFilter(message, filter));
     }
 
-    @MessageMapping("camel-virtual/{client}/{filter}")
-    public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter) throws Exception {
-        camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic));
-        return Flux.from(camel.fromStream(client + "_" + outTopic, String.class)).filter(message -> applyFilter(message, filter))
+    @MessageMapping("camel-virtual/{client}/{filter}/{id}")
+    public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter, @DestinationVariable String id) throws Exception {
+        camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic, id));
+        return Flux.from(camel.fromStream(client + "_" + outTopic + "_" + id, String.class)).filter(message -> applyFilter(message, filter))
                 .doOnCancel(() -> terminateRoute(client, "cancel"))
                 .doOnTerminate(() -> terminateRoute(client, "terminate"))
                 .doOnError(error -> terminateRoute(client, "error")).log();
@@ -213,8 +215,8 @@ public class RSocketController {
             e.printStackTrace();
         }
         String[] filters = filter.split(",");
-//        String client = jsonNode.get("client").asText();
-        return true;
+        String client = jsonNode.get("client").asText();
+        return (Arrays.asList(filters).contains(client));
     }
 
 }

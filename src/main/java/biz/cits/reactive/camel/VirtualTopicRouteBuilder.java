@@ -7,18 +7,19 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
-import org.springframework.transaction.annotation.Transactional;
 
 public class VirtualTopicRouteBuilder extends RouteBuilder {
     private final String client;
     private final String outTopic;
+    private final String id;
     private final CamelContext context;
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
 
-    public VirtualTopicRouteBuilder(CamelContext context, String client, String outTopic) {
+    public VirtualTopicRouteBuilder(CamelContext context, String client, String outTopic, String id) {
         super(context);
         this.client = client;
         this.outTopic = outTopic;
+        this.id = id;
         this.context = context;
     }
 
@@ -28,7 +29,7 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
 
         if (context.getRoute(client) == null) {
             fromF("activemq:queue:Consumer.%s.VirtualTopic.%s?transacted=true", client, outTopic)
-                    .routeId(client)
+                    .routeId(client + "_" + id)
 //                    .onException(IllegalStateException.class).markRollbackOnly().end()
 //                    .transacted()
                     .process(exchange -> {
@@ -45,7 +46,7 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                     })
                     .toF("seda:%s", client)
                     .doTry()
-                        .toF("reactive-streams:%s_%s?maxInflightExchanges=100", client, outTopic)
+                        .toF("reactive-streams:%s_%s_%s?maxInflightExchanges=100", client, outTopic, id)
                     .doCatch(IllegalStateException.class)
                         .process(exchange -> {
                             exchange.getContext().getRoute(client).getEndpoint().stop();
