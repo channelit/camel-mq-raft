@@ -31,6 +31,9 @@ camel:
     activemq:
       broker-url: "tcp://localhost:61616"
       connection-factory: CachingConnectionFactory
+      transacted: true
+      transaction-manager: JmsTransactionManager
+      acknowledgement-mode-name: SESSION_TRANSACTED
 
 #    jms:
 #      transacted: true

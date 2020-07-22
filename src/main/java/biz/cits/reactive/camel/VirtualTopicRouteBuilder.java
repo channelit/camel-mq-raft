@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.camel.*;
 import org.apache.camel.builder.RouteBuilder;
+import org.springframework.transaction.annotation.Transactional;
 
 public class VirtualTopicRouteBuilder extends RouteBuilder {
     private final String client;
@@ -24,14 +25,12 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     }
 
     @Override
-//    @Transactional
     public void configure() {
-
         if (context.getRoute(client) == null) {
-            fromF("activemq:queue:Consumer.%s.VirtualTopic.%s?transacted=true", client, outTopic)
+            fromF("activemq:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
                     .routeId(client + "_" + id)
-//                    .onException(IllegalStateException.class).markRollbackOnly().end()
-//                    .transacted()
+                    .onException(IllegalStateException.class).markRollbackOnly().end()
+                    .transacted()
                     .process(exchange -> {
                         String jsonString = exchange.getIn().getBody().toString();
                         JsonNode jsonNode = null;
@@ -44,13 +43,12 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         exchange.getMessage().setBody(jsonNode);
 
                     })
-                    .toF("seda:%s", client)
                     .doTry()
                         .toF("reactive-streams:%s_%s_%s?maxInflightExchanges=100", client, outTopic, id)
                     .doCatch(IllegalStateException.class)
                         .process(exchange -> {
-                            exchange.getContext().getRoute(client).getEndpoint().stop();
-                            exchange.getContext().getRoute(client).getConsumer().stop();
+//                            exchange.getContext().getRoute(client + "_" + id).getEndpoint().stop();
+//                            exchange.getContext().getRoute(client + "_" + id).getConsumer().stop();
                             log.info("Exit Route " + client + " " + context.getRoutes().toString());
                             throw new IllegalStateException();
                         })

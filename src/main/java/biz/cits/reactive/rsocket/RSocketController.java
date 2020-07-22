@@ -89,14 +89,14 @@ public class RSocketController {
             case "replay":
                 return replay(client, filter, data);
             default:
-                return getMessages(filter);
+                return getMessages(filter, "");
         }
     }
 
-    @MessageMapping("inspect/{client}")
-    public Mono<String> getMessages(@DestinationVariable String client) {
+    @MessageMapping("inspect/{client}/{id}")
+    public Mono<String> getMessages(@DestinationVariable String client, @DestinationVariable String id) {
         log.info("FILTER:{}", client);
-        return Mono.just(inspectRoute(client));
+        return Mono.just(inspectRoute(client + "_" + id));
     }
 
     @MessageMapping("camel/{filter}")
@@ -129,9 +129,9 @@ public class RSocketController {
     public Publisher<String> getCamelVirtual(@DestinationVariable String client, @DestinationVariable String filter, @DestinationVariable String id) throws Exception {
         camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic, id));
         return Flux.from(camel.fromStream(client + "_" + outTopic + "_" + id, String.class)).filter(message -> applyFilter(message, filter))
-                .doOnCancel(() -> terminateRoute(client, "cancel"))
-                .doOnTerminate(() -> terminateRoute(client, "terminate"))
-                .doOnError(error -> terminateRoute(client, "error")).log();
+                .doOnCancel(() -> terminateRoute(client + "_" + id, "cancel"))
+                .doOnTerminate(() -> terminateRoute(client + "_" + id, "terminate"))
+                .doOnError(error -> terminateRoute(client + "_" + id, "error")).log();
     }
 
     @MessageMapping("replay/{client}/{filter}")
@@ -215,8 +215,9 @@ public class RSocketController {
             e.printStackTrace();
         }
         String[] filters = filter.split(",");
-        String client = jsonNode.get("client").asText();
-        return (Arrays.asList(filters).contains(client));
+//        String client = jsonNode.get("client").asText();
+//        return (Arrays.asList(filters).contains(client));
+        return  true;
     }
 
 }

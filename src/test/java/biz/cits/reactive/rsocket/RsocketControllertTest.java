@@ -17,7 +17,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jms.core.JmsTemplate;
 import org.springframework.messaging.rsocket.RSocketRequester;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
@@ -33,9 +32,6 @@ public class RsocketControllertTest {
 
     @Autowired
     private RSocketRequester rSocketRequester;
-
-    @Autowired
-    private JmsTemplate mockJmsTemplate;
 
     @Test
     @DisplayName("JSON Parser Error Test")
