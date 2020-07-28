@@ -33,7 +33,7 @@ camel:
       connection-factory: CachingConnectionFactory
       transacted: true
       transaction-manager: JmsTransactionManager
-      acknowledgement-mode-name: SESSION_TRANSACTED
+      acknowledgement-mode-name: CLIENT_ACKNOWLEDGE
 
 #    jms:
 #      transacted: true

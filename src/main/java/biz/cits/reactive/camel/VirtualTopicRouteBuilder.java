@@ -27,10 +27,10 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
     @Override
     public void configure() {
         if (context.getRoute(client) == null) {
-            fromF("activemq:queue:Consumer.%s.VirtualTopic.%s", client, outTopic)
+            fromF("activemq:queue:Consumer.%s.VirtualTopic.%s?transacted=true", client, outTopic)
                     .routeId(client + "_" + id)
-                    .onException(IllegalStateException.class).markRollbackOnly().end()
-                    .transacted()
+//                    .onException(IllegalStateException.class).markRollbackOnly().end()
+//                    .transacted()
                     .process(exchange -> {
                         String jsonString = exchange.getIn().getBody().toString();
                         JsonNode jsonNode = null;
@@ -47,8 +47,8 @@ public class VirtualTopicRouteBuilder extends RouteBuilder {
                         .toF("reactive-streams:%s_%s_%s?maxInflightExchanges=100", client, outTopic, id)
                     .doCatch(IllegalStateException.class)
                         .process(exchange -> {
-//                            exchange.getContext().getRoute(client + "_" + id).getEndpoint().stop();
-//                            exchange.getContext().getRoute(client + "_" + id).getConsumer().stop();
+                            exchange.getContext().getRoute(client + "_" + id).getEndpoint().stop();
+                            exchange.getContext().getRoute(client + "_" + id).getConsumer().stop();
                             log.info("Exit Route " + client + " " + context.getRoutes().toString());
                             throw new IllegalStateException();
                         })
