@@ -134,6 +134,16 @@ public class RSocketController {
                 .doOnError(error -> terminateRoute(client + "_" + id, "error")).log();
     }
 
+    @MessageMapping("subscribe/{client}/{id}")
+    public Publisher<String> subscribe(@DestinationVariable String client, @Payload String filter, @DestinationVariable String id) throws Exception {
+        camelContext.addRoutes(new VirtualTopicRouteBuilder(camelContext, client, outTopic, id));
+        return Flux.from(camel.fromStream(client + "_" + outTopic + "_" + id, String.class)).filter(message -> applyFilter(message, filter))
+                .doOnCancel(() -> terminateRoute(client + "_" + id, "cancel"))
+                .doOnTerminate(() -> terminateRoute(client + "_" + id, "terminate"))
+                .doOnError(error -> terminateRoute(client + "_" + id, "error")).log();
+    }
+
+
     @MessageMapping("replay/{client}/{filter}")
     public Publisher<String> replay(@DestinationVariable String client, @DestinationVariable String filter, @Payload String jsonQuery) throws Exception {
         terminateRoute("replay_" + client, "route_start");

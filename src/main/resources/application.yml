@@ -29,11 +29,12 @@ camel:
     reactive-streams:
       thread-pool-max-size: 5
     activemq:
-      broker-url: "tcp://localhost:61616"
+      broker-url: ${AMQ_URL}
       connection-factory: CachingConnectionFactory
       transacted: true
       transaction-manager: JmsTransactionManager
       acknowledgement-mode-name: CLIENT_ACKNOWLEDGE
+      lazy-create-transaction-manager: false
 
 #    jms:
 #      transacted: true
