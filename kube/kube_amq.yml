@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: activemq
+  labels:
+    app: activemq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: activemq
+  template:
+    metadata:
+      labels:
+        app: activemq
+    spec:
+      containers:
+        - image: cithub/activemq
+          name: activemq
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: 500Mi
+              cpu: 200m
+            limits:
+              memory: 1000Mi
+              cpu: 400m
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    run: activemq
+  name: activemq
+  namespace: activemq
+spec:
+  ports:
+    - port: 8161
+      protocol: TCP
+      targetPort: 8161
+  selector:
+    run: activemq
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
