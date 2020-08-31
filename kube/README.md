@@ -40,7 +40,9 @@ kubectl -n kube-system describe secret $(kubectl -n kube-system get secret | awk
 Expose commands
 ```
 kubectl expose deployment postgres --port=5432 --target-port=5432 -n postgres
+kubectl port-forward svc/server 7000:7000 -n server
 kubectl expose deployment activemq --port=8161 --target-port=8161 -n activemq
+kubectl port-forward svc/server 8484:8484 -n server
 ```
 
 Cleanup
