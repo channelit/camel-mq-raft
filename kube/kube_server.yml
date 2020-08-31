@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: server
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: server
@@ -17,6 +17,8 @@ spec:
           image: backend-app:v1
           imagePullPolicy: Never
           env:
+            - name: SERVER_PORT
+              value: "8421"
             - name: AMQ_URL
               valueFrom:
                 configMapKeyRef:
@@ -63,21 +65,21 @@ spec:
   selector:
     app: server
   sessionAffinity: None
-  type: ClusterIP
+  type: LoadBalancer
 ---
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: server-ingress
-  namespace: server
-  annotations:
-    kubernetes.io/ingress.class: nginx
-spec:
-  rules:
-    - host: rsocket.local
-      http:
-        paths:
-          - backend:
-              serviceName: server
-              servicePort: 7000
-            path: /
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: server-ingress
+#  namespace: server
+#  annotations:
+#    kubernetes.io/ingress.class: nginx
+#spec:
+#  rules:
+#    - host: rsocket.local
+#      http:
+#        paths:
+#          - backend:
+#              serviceName: server
+#              servicePort: 7000
+#            path: /

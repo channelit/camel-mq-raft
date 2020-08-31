@@ -48,4 +48,4 @@ spec:
   selector:
     app: activemq
   sessionAffinity: None
-  type: ClusterIP
+  type: LoadBalancer
