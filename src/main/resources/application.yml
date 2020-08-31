@@ -8,11 +8,11 @@ app:
   jms-ttl-millis: 5000
 
 postgres:
-  server: localhost
+  server: ${PG_HOST}
   port: 5432
-  user: postgres
-  pswd: camel
-  db: postgres
+  user: ${PG_USER}
+  pswd: ${PG_PSWD}
+  db: ${PG_DB}
 
 spring:
   rsocket:

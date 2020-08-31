@@ -10,6 +10,7 @@ import io.rsocket.RSocketFactory;
 import io.rsocket.frame.decoder.PayloadDecoder;
 import io.rsocket.metadata.WellKnownMimeType;
 import io.rsocket.transport.netty.client.TcpClientTransport;
+import org.junit.Ignore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +34,7 @@ public class RsocketControllertTest {
     @Autowired
     private RSocketRequester rSocketRequester;
 
-    @Test
+    @Ignore
     @DisplayName("JSON Parser Error Test")
     public void JsonErrorTest() throws Exception {
         Flux<String> response = rSocketRequester.route("post/me").data("Invalid JSON").retrieveFlux(String.class).map(this::parseJson);

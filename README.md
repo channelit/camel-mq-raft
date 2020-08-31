@@ -5,5 +5,3 @@
 ```shell script
 docker build -t backend-app .
 ```
-
-kubectl expose deployment postgres --port=5432 --target-port=5432 -n postgres

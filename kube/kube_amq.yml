@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: activemq
+  namespace: activemq
   labels:
     app: activemq
 spec:
@@ -31,17 +32,20 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    run: activemq
+    app: activemq
   name: activemq
   namespace: activemq
 spec:
   ports:
-    - port: 8161
+    - name: dashboard
+      port: 8161
       protocol: TCP
       targetPort: 8161
+    - name: jms
+      port: 61616
+      protocol: TCP
+      targetPort: 61616
   selector:
-    run: activemq
+    app: activemq
   sessionAffinity: None
   type: ClusterIP
-status:
-  loadBalancer: {}
